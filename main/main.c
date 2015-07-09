@@ -99,13 +99,19 @@ uint8_t getIn(uint8_t chan)
 
 static int cueues_initialized = 0;
 
-void addToCueue(uint16_t cueue,uint8_t cueue_type,uint16_t animation_position)
+void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t animation_position)
 {
 	if(cueues_initialized == 0)
 	{
 		for(int i = 0; i < MAX_CUEUES; i++)
 		{
 			cueues[i].length = 0;
+			cueues[i].off_in_cueue=-1;
+			cueues[i].test_in_cueue=-1;
+			cueues[i].tick=0;
+			cueues[i].last_frame=0;
+			cueues[i].playmode=1;
+			cueues[i].active_item=0;
 			cueueidx[i]=0;
 		}
 		cueues_initialized=1;
@@ -125,30 +131,18 @@ void addToCueue(uint16_t cueue,uint8_t cueue_type,uint16_t animation_position)
 
 
 
-
-	if(cueues[cidx].length == 0)
+	if(cueue_type == TYPE_NORMAL)
 	{
-		cueues[cidx].tick=0;
-		cueues[cidx].last_frame=0;
-		cueues[cidx].playmode=1;
-		cueues[cidx].active_item=0;
-		cueues[cidx].off_in_cueue=-1;
-		cueues[cidx].test_in_cueue=-1;
-
-		if(cueue_type == TYPE_NORMAL)
+		if(cueues[cidx].length == 0)
 		{
 			cueues[cidx].active_in_cueue=animation_position;
 			cueues[cidx].first_in_cueue=animation_position;
 		}
-	}
-	else
-	{
-		if(cueue_type == TYPE_NORMAL)
+		else
+		{
 			animations[cueues[cidx].last_in_cueue].next_in_cueue = animation_position;
-	}
+		}
 
-	if(cueue_type == TYPE_NORMAL)
-	{
 		animations[animation_position].next_in_cueue = cueues[cidx].first_in_cueue;
 		cueues[cidx].last_in_cueue=animation_position;
 		cueues[cidx].length++;
@@ -161,14 +155,11 @@ void addToCueue(uint16_t cueue,uint8_t cueue_type,uint16_t animation_position)
 		cueues[cidx].test_in_cueue=animation_position;
 		
 
-
-
-
 }
 
 
 
-void registerAnimation(init_fun init,tick_fun tick, deinit_fun deinit,uint16_t cueue,uint8_t cueue_type,uint16_t t, uint16_t count)
+void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const uint16_t count)
 {
 	if(animationcount == MAX_ANIMATIONS)
 		return;
@@ -311,18 +302,19 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
 			else
 			{
-				if(pm == 4)
+
+			if(pm == 4)
 					if(cueues[cidx].test_in_cueue != -1)
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],15);
 					else
 						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
 				else if(pm == 3)
-					if(cueues[cidx].off_in_cueue == -1)
+					if(cueues[cidx].off_in_cueue != -1)
 						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
 					else
 						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
 				else if(pm == 2)
-					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],14);
 			}
 #endif
 	}
@@ -524,11 +516,11 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					{
 						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
 						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
-							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],15);
 						if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
 							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
 						if(pm < 3)
-							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],14);
 					}
 #endif
 #ifdef KORG_CTRL
