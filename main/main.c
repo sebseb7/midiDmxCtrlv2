@@ -175,9 +175,13 @@ void registerAnimation(init_fun init,tick_fun tick, deinit_fun deinit,uint16_t c
 	animations[animationcount].init_fp = init;
 	animations[animationcount].tick_fp = tick;
 	animations[animationcount].deinit_fp = deinit;
-	animations[animationcount].duration = t*count;
 	animations[animationcount].cueue = cueue;
-	animations[animationcount].timing = 1000000/t;
+
+	if(cueue_type == TYPE_NORMAL)
+	{
+		animations[animationcount].duration = t*count;
+		animations[animationcount].timing = 1000000/t;
+	}
 
 	addToCueue(cueue,cueue_type,animationcount);
 
@@ -307,12 +311,17 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
 			else
 			{
-				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
-				if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
-					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
-				if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
-					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
-				if(pm == 2)
+				if(pm == 4)
+					if(cueues[cidx].test_in_cueue != -1)
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+					else
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+				else if(pm == 3)
+					if(cueues[cidx].off_in_cueue == -1)
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+					else
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+				else if(pm == 2)
 					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
 			}
 #endif
@@ -518,7 +527,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
 						if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
 							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
-						if(pm == 2)
+						if(pm < 3)
 							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
 					}
 #endif
