@@ -60,8 +60,10 @@ struct cueue {
 	uint16_t first_in_cueue;
 	uint16_t last_in_cueue;
 	uint16_t active_in_cueue;
+	int16_t test_in_cueue;
+	int16_t off_in_cueue;
 	uint8_t length;
-	uint8_t playmode; //1=play,2=pause;3=off,4=test
+	uint8_t playmode; //1=play,2=pause;3=off,4=testi,(0 = manual)
 	uint8_t active_item;
 	uint32_t tick;
 	uint32_t last_frame;
@@ -97,7 +99,7 @@ uint8_t getIn(uint8_t chan)
 
 static int cueues_initialized = 0;
 
-void addToCueue(uint16_t cueue,uint16_t animation_position)
+void addToCueue(uint16_t cueue,uint8_t cueue_type,uint16_t animation_position)
 {
 	if(cueues_initialized == 0)
 	{
@@ -130,25 +132,43 @@ void addToCueue(uint16_t cueue,uint16_t animation_position)
 		cueues[cidx].last_frame=0;
 		cueues[cidx].playmode=1;
 		cueues[cidx].active_item=0;
-		cueues[cidx].active_in_cueue=animation_position;
-		cueues[cidx].first_in_cueue=animation_position;
+		cueues[cidx].off_in_cueue=-1;
+		cueues[cidx].test_in_cueue=-1;
+
+		if(cueue_type == TYPE_NORMAL)
+		{
+			cueues[cidx].active_in_cueue=animation_position;
+			cueues[cidx].first_in_cueue=animation_position;
+		}
 	}
 	else
 	{
-		animations[cueues[cidx].last_in_cueue].next_in_cueue = animation_position;
+		if(cueue_type == TYPE_NORMAL)
+			animations[cueues[cidx].last_in_cueue].next_in_cueue = animation_position;
 	}
 
-	animations[animation_position].next_in_cueue = cueues[cidx].first_in_cueue;
+	if(cueue_type == TYPE_NORMAL)
+	{
+		animations[animation_position].next_in_cueue = cueues[cidx].first_in_cueue;
+		cueues[cidx].last_in_cueue=animation_position;
+		cueues[cidx].length++;
+	}
+	
+	if(cueue_type == TYPE_OFF)
+		cueues[cidx].off_in_cueue=animation_position;
+	
+	if(cueue_type == TYPE_TEST)
+		cueues[cidx].test_in_cueue=animation_position;
 		
-	cueues[cidx].last_in_cueue=animation_position;
-	cueues[cidx].length++;
+
+
 
 
 }
 
 
 
-void registerAnimation(init_fun init,tick_fun tick, deinit_fun deinit,uint16_t cueue,uint16_t t, uint16_t count)
+void registerAnimation(init_fun init,tick_fun tick, deinit_fun deinit,uint16_t cueue,uint8_t cueue_type,uint16_t t, uint16_t count)
 {
 	if(animationcount == MAX_ANIMATIONS)
 		return;
@@ -159,7 +179,7 @@ void registerAnimation(init_fun init,tick_fun tick, deinit_fun deinit,uint16_t c
 	animations[animationcount].cueue = cueue;
 	animations[animationcount].timing = 1000000/t;
 
-	addToCueue(cueue,animationcount);
+	addToCueue(cueue,cueue_type,animationcount);
 
 	animationcount++;
 
@@ -286,7 +306,15 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			if(cueues[cidx].playmode == pm)
 				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
 			else
-				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+			{
+				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+				if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
+					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+				if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
+					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+				if(pm == 2)
+					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+			}
 #endif
 	}
 
@@ -337,8 +365,21 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				for(int pm =1;pm < 5 ; pm++)
 					if((e.type == 144)&&(e.x==lpmap[(cidx*16+pm)-1])&&(e.y==127))
 					{
-						cueues[cidx].playmode = pm;
-						update_ui=1;
+						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
+						{
+							cueues[cidx].playmode = pm;
+							update_ui=1;
+						}
+						else if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
+						{
+							cueues[cidx].playmode = pm;
+							update_ui=1;
+						}
+						else if(pm < 3)
+						{
+							cueues[cidx].playmode = pm;
+							update_ui=1;
+						}
 					}
 
 
@@ -471,7 +512,15 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					if(cueues[cidx].playmode == pm)
 						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
 					else
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+					{
+						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
+							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+						if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
+							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+						if(pm == 2)
+							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+					}
 #endif
 #ifdef KORG_CTRL
 			keyboard_send(&midi_korg,176,43,toggle[0]*127);

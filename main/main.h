@@ -22,13 +22,19 @@ enum {
 	CUEUE_ENUMLENGTH
 };
 
+enum {
+	TYPE_NORMAL = 1,
+	TYPE_OFF,
+	TYPE_TEST
+};
+
 
 typedef void (*init_fun)(void);
 typedef void (*deinit_fun)(void);
 typedef uint8_t (*tick_fun)(void);
 
 
-void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t type, uint16_t t, uint16_t duration);
+void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t cueue, uint8_t cueue_type, uint16_t t, uint16_t duration);
 
 void setLedX(uint8_t x, uint8_t r,uint8_t g,uint8_t b);
 void setCh(uint8_t chan, uint8_t value);
