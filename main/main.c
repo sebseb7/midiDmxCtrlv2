@@ -546,7 +546,15 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				time_diff+=1000000;
 			}
 
-			if((uint32_t)time_diff > animations[cueues[cidx].active_in_cueue].timing)
+			if(cueues[cidx].playmode == 4)
+			{
+				animations[cueues[cidx].test_in_cueue].tick_fp();
+			}
+			else if(cueues[cidx].playmode == 3)
+			{
+				animations[cueues[cidx].off_in_cueue].tick_fp();
+			}
+			else if((uint32_t)time_diff > animations[cueues[cidx].active_in_cueue].timing)
 			{
 				//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
 
@@ -647,8 +655,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		for(int cidx=0;cidx < cueuecount;cidx++)
 		{
 
-			//if((((cueues[cidx].tick >= animations[cueues[cidx].active_in_cueue].duration)&& toggle[0]))||(new_animation != current_animation))
-			if((cueues[cidx].tick >= animations[cueues[cidx].active_in_cueue].duration)&& toggle[0])
+			if((cueues[cidx].tick >= animations[cueues[cidx].active_in_cueue].duration)&& cueues[cidx].playmode == 1)
 			{
 				animations[cueues[cidx].active_in_cueue].deinit_fp();
 
