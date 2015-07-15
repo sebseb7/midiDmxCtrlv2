@@ -25,7 +25,8 @@ enum {
 enum {
 	TYPE_NORMAL = 1,
 	TYPE_OFF,
-	TYPE_TEST
+	TYPE_TEST,
+	TYPE_SIMPLE
 };
 
 

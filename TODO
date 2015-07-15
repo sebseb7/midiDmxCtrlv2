@@ -1,0 +1,11 @@
+- bpm from djm
+- paging via H key
+- dynamic cueue matrix offset
+- exlusive queue items
+- forced queue items
+- exclusive/alternative queues
+- toggle which queeues to display via G
+- set queue color on initialisation 
+- manual mode setup via F, manual mode via lauchpad only!
+- cueue setup via firstrowbutton , toggle specific queue entries
+
