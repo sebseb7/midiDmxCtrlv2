@@ -8,4 +8,8 @@
 - set queue color on initialisation 
 - manual mode setup via F, manual mode via lauchpad only!
 - cueue setup via firstrowbutton , toggle specific queue entries
+- display abstration for launchpad (problably like dmxbox)
+- full dynamic allocation
+- port to stm32f425-disco
+- lauchpad double buffering
 
