@@ -60,6 +60,7 @@ struct cueue {
 	int16_t test_in_cueue;
 	int16_t off_in_cueue;
 	uint8_t length;
+	uint8_t visible;
 	uint8_t playmode; //1=play,2=pause;3=off,4=testi,(0 = manual)
 	uint8_t active_item;
 	uint32_t tick;
@@ -108,6 +109,7 @@ void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t ani
 			cueues[i].tick=0;
 			cueues[i].last_frame=0;
 			cueues[i].playmode=1;
+			cueues[i].visible=1;
 			cueues[i].active_item=0;
 			cueueidx[i]=0;
 		}
@@ -154,10 +156,11 @@ void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t ani
 
 }
 
-void queueInitialization(uint8_t cueue_type,int playmode)
+void queueInitialization(uint8_t cueue_type,int playmode,int visible)
 {
 	int cidx = cueueidx[cueue_type]-1;
 	cueues[cidx].playmode=playmode;
+	cueues[cidx].visible=visible;
 }
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const uint16_t count)
