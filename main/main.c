@@ -15,6 +15,7 @@
 
 
 #include "keyboard.h"
+#include "launchpad.h"
 
 #ifdef SDL_OUTPUT
 #include <SDL/SDL.h>
@@ -38,13 +39,6 @@ void intHandler(int dummy)
 int animationcount = 0;
 int cueuecount = 0;
 
-
-#ifdef LAUNCHPAD
-
-static const uint8_t lpmap_side[8] = {
-	8,24,40,56,72,88,104,120
-};
-
 static const uint8_t lpmap[64] = {
 	0 ,1 ,2 ,3 ,4 ,5 ,6 ,7 ,
 	16,17,18,19,20,21,22,23,
@@ -57,7 +51,6 @@ static const uint8_t lpmap[64] = {
 
 };
 
-#endif
 
 
 struct cueue {
@@ -188,13 +181,9 @@ void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun
 int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unused__))) {
 		
 #ifdef LAUNCHPAD
-	MidiObj midi_launch;
-	keyboard_init(&midi_launch,"Launchpad Mini");
-
-
-	//bits 0 ,1  : red  (+1) ; bit 4/5 : green (+16)
-
+	launchpad_init();
 #endif
+
 #ifdef KORG_CTRL
 	MidiObj midi_korg;
 	keyboard_init(&midi_korg,"nanoKONTROL");
@@ -216,20 +205,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	toggle[2]=1;			
 	toggle[3]=1;			
 	toggle[4]=1;			
-#ifdef LAUNCHPAD
-	keyboard_send(&midi_launch,176,104,toggle[0]*15);
-	keyboard_send(&midi_launch,176,105,toggle[1]*15);
-	keyboard_send(&midi_launch,176,106,toggle[2]*15);
-	keyboard_send(&midi_launch,176,107,toggle[3]*15);
-	keyboard_send(&midi_launch,176,108,toggle[4]*15);
-
-
-	for(int i = 0; i<64;i++)
-		keyboard_send(&midi_launch,144,lpmap[i],0);	
-
-	
-	keyboard_send(&midi_launch,176,0,40);
-#endif
 #ifdef KORG_CTRL
 	keyboard_send(&midi_korg,176,43,toggle[0]*127);
 	keyboard_send(&midi_korg,176,44,toggle[1]*127);
@@ -311,30 +286,30 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		for(int pm =1;pm < 5 ; pm++)
 		{
 			if(cueues[cidx].playmode == pm)
-				keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
+				launchpad_setMatrix(cidx*2,pm-1,3,3,0);
 			else
 			{
 
 			if(pm == 4)
 					if(cueues[cidx].test_in_cueue != -1)
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],15);
+						launchpad_setMatrix(cidx*2,pm-1,3,0,0);
 					else
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
 				else if(pm == 3)
 					if(cueues[cidx].off_in_cueue != -1)
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+						launchpad_setMatrix(cidx*2,pm-1,1,0,0);
 					else
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
 				else if(pm == 2)
-					keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],14);
+					launchpad_setMatrix(cidx*2,pm-1,2,0,0);
 			}
 		}
 		for(int i =0;i<cueues[cidx].length;i++)
 		{
 			if(cueues[cidx].active_item == i)
-				keyboard_send(&midi_launch,144,lpmap[cidx*16+4+i],60);
+				launchpad_setMatrix(cidx*2,4+i,0,3,0);
 			else
-				keyboard_send(&midi_launch,144,lpmap[cidx*16+4+i],11);
+				launchpad_setMatrix(cidx*2,4+i,1,1,0);
 		}
 #endif
 	}
@@ -380,7 +355,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 #ifdef LAUNCHPAD
-		while(keyboard_poll(&midi_launch,&e)) 
+	while(launchpad_poll(&e)) 
 		{
 			for(int cidx=0;cidx < cueuecount;cidx++)
 				for(int pm =1;pm < 5 ; pm++)
@@ -439,6 +414,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			}
 			printf("%d %d %d\n", e.x, e.y, e.type);
 		}
+
 #endif
 #ifdef KORG_CTRL
 		while(keyboard_poll(&midi_korg,&e)) 
@@ -522,25 +498,25 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		if(update_ui)
 		{
 #ifdef LAUNCHPAD
-			keyboard_send(&midi_launch,176,104,toggle[0]*15);
-			keyboard_send(&midi_launch,176,105,toggle[1]*15);
-			keyboard_send(&midi_launch,176,106,toggle[2]*15);
-			keyboard_send(&midi_launch,176,107,toggle[3]*15);
-			keyboard_send(&midi_launch,176,108,toggle[4]*15);
+	//		keyboard_send(&midi_launch,176,104,toggle[0]*15);
+	//		keyboard_send(&midi_launch,176,105,toggle[1]*15);
+	//		keyboard_send(&midi_launch,176,106,toggle[2]*15);
+	//		keyboard_send(&midi_launch,176,107,toggle[3]*15);
+	//		keyboard_send(&midi_launch,176,108,toggle[4]*15);
 	
 			for(int cidx=0;cidx < cueuecount;cidx++)
 				for(int pm =1;pm < 5 ; pm++)
 					if(cueues[cidx].playmode == pm)
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],62);
+						launchpad_setMatrix(cidx*2,pm-1,3,3,0);
 					else
 					{
-						keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],0);
+						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
 						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
-							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],15);
+							launchpad_setMatrix(cidx*2,pm-1,3,0,0);
 						if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
-							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],13);
+							launchpad_setMatrix(cidx*2,pm-1,1,0,0);
 						if(pm < 3)
-							keyboard_send(&midi_launch,144,lpmap[(cidx*16+pm)-1],14);
+							launchpad_setMatrix(cidx*2,pm-1,2,0,0);
 					}
 #endif
 #ifdef KORG_CTRL
@@ -680,8 +656,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				animations[cueues[cidx].active_in_cueue].deinit_fp();
 
 #ifdef LAUNCHPAD
-				keyboard_send(&midi_launch,144,lpmap[cueues[cidx].active_item+cidx*16+4],0);
-
+				launchpad_setMatrix(cidx*2,4+cueues[cidx].active_item,1,1,0);
 #endif
 #ifdef KORG_CTRL
 				
@@ -721,7 +696,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				cueues[cidx].active_in_cueue=animations[cueues[cidx].active_in_cueue].next_in_cueue;
 
 #ifdef LAUNCHPAD
-				keyboard_send(&midi_launch,144,lpmap[cueues[cidx].active_item+cidx*16+4],60);
+				launchpad_setMatrix(cidx*2,4+cueues[cidx].active_item,0,3,0);
 #endif
 #ifdef KORG_CTRL
 //				if(current_animation < 8)

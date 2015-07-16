@@ -28,9 +28,9 @@ kext:
 	sudo kextunload -b com.apple.driver.AppleUSBFTDI
 	sudo kextunload -b com.FTDI.driver.FTDIUSBSerialDriver
 
-dmxMidiCtrl: $(SOURCES) $(LIB_SOURCES) $(LIB_HEADERS) main.c main.h Makefile 
+dmxMidiCtrl: $(SOURCES) $(LIB_SOURCES) $(LIB_HEADERS) main.c main.h launchpad.c launchpad.h Makefile 
 	@echo "  \033[1;34mCompile\033[0m"
-	@$(COMPILER) main.c  -o dmxMidiCtrl -I. -I../libs $(FLAGS) $(LIB_SOURCES) $(SOURCES) $(LDFLAGS) 
+	@$(COMPILER) main.c launchpad.c -o dmxMidiCtrl -I. -I../libs $(FLAGS) $(LIB_SOURCES) $(SOURCES) $(LDFLAGS) 
 
 .PHONY : clean all kext
 
