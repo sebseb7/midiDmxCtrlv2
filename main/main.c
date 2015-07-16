@@ -358,25 +358,60 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	while(launchpad_poll(&e)) 
 		{
 			for(int cidx=0;cidx < cueuecount;cidx++)
+			{
 				for(int pm =1;pm < 5 ; pm++)
 					if((e.type == 144)&&(e.x==lpmap[(cidx*16+pm)-1])&&(e.y==127))
 					{
-						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
+						if(cueues[cidx].playmode == pm)
 						{
-							cueues[cidx].playmode = pm;
+							cueues[cidx].playmode = 0;
 							update_ui=1;
 						}
-						else if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
+						else
 						{
-							cueues[cidx].playmode = pm;
-							update_ui=1;
-						}
-						else if(pm < 3)
-						{
-							cueues[cidx].playmode = pm;
-							update_ui=1;
+							if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
+							{
+								cueues[cidx].playmode = pm;
+								update_ui=1;
+							}
+							else if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
+							{
+								cueues[cidx].playmode = pm;
+								update_ui=1;
+							}
+							else if(pm < 3)
+							{
+								cueues[cidx].playmode = pm;
+								update_ui=1;
+							}
 						}
 					}
+			
+				if((cueues[cidx].playmode == 1)||(cueues[cidx].playmode==2))
+				{
+					if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+4])&&(e.x <= lpmap[(cidx*16)+7]))
+					{
+						int new_idx = e.x-(4+(cidx*32));
+						if(new_idx < cueues[cidx].length)
+						{
+							while(new_idx != cueues[cidx].active_item)
+							{
+								update_ui=1;
+					
+								animations[cueues[cidx].active_in_cueue].deinit_fp();
+					
+								cueues[cidx].active_item++;
+								if(cueues[cidx].length == cueues[cidx].active_item)
+									cueues[cidx].active_item=0;
+
+								cueues[cidx].active_in_cueue=animations[cueues[cidx].active_in_cueue].next_in_cueue;
+								cueues[cidx].tick=0;
+								animations[cueues[cidx].active_in_cueue].init_fp();
+							}
+						}
+					}	
+				}
+			}
 
 
 			if((e.type == 176)&&(e.x==104)&&(e.y==127))
@@ -404,14 +439,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				toggle[4] ^= 1;
 				update_ui=1;
 			}
-			if((e.type == 144)&&(e.y == 127)&&(e.x<8)&&(e.x < 0+animationcount))
-			{
-				//new_animation = e.x;
-			}
-			if((e.type == 144)&&(e.y == 127)&&(e.x>=16)&&(e.x<24)&&(e.x < 16+animationcount-8))
-			{
+		//	if((e.type == 144)&&(e.y == 127)&&(e.x>lpmap[(cidx*16+pm)-1]&&(e.x < 0+animationcount))
+		//	{
+		//		new_animation = e.x;
+		//	}
+		//	if((e.type == 144)&&(e.y == 127)&&(e.x>=16)&&(e.x<24)&&(e.x < 16+animationcount-8))
+		//	{
 				//new_animation = e.x-16+8;
-			}
+		//	}
 			printf("%d %d %d\n", e.x, e.y, e.type);
 		}
 
@@ -505,6 +540,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	//		keyboard_send(&midi_launch,176,108,toggle[4]*15);
 	
 			for(int cidx=0;cidx < cueuecount;cidx++)
+			{
 				for(int pm =1;pm < 5 ; pm++)
 					if(cueues[cidx].playmode == pm)
 						launchpad_setMatrix(cidx*2,pm-1,3,3,0);
@@ -518,6 +554,29 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 						if(pm < 3)
 							launchpad_setMatrix(cidx*2,pm-1,2,0,0);
 					}
+		
+				for(int i =0;i<cueues[cidx].length;i++)
+				{
+					if((cueues[cidx].playmode==0)||(cueues[cidx].playmode>2))
+					{
+						launchpad_setMatrix(cidx*2,4+i,1,0,0);
+					}
+					else
+					{
+						if(cueues[cidx].active_item == i)
+							launchpad_setMatrix(cidx*2,4+i,0,3,0);
+						else
+							if(cueues[cidx].playmode==2)
+							{
+								launchpad_setMatrix(cidx*2,4+i,1,0,0);
+							}
+							else
+							{
+								launchpad_setMatrix(cidx*2,4+i,1,1,0);
+							}
+					}
+				}
+			}
 #endif
 #ifdef KORG_CTRL
 			keyboard_send(&midi_korg,176,43,toggle[0]*127);
@@ -550,12 +609,12 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			{
 				animations[cueues[cidx].off_in_cueue].tick_fp();
 			}
-			else if((uint32_t)time_diff > animations[cueues[cidx].active_in_cueue].timing)
+			else if(((uint32_t)time_diff > animations[cueues[cidx].active_in_cueue].timing)&&(cueues[cidx].playmode > 0))
 			{
 				//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
 
 				animations[cueues[cidx].active_in_cueue].tick_fp();
-				if(toggle[0]) cueues[cidx].tick++;
+				if(cueues[cidx].playmode==1) cueues[cidx].tick++;
 				gettimeofday(&tv,NULL);
 				cueues[cidx].last_frame = tv.tv_usec ;
 			
