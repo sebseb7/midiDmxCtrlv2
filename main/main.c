@@ -154,7 +154,11 @@ void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t ani
 
 }
 
-
+void queueInitialization(uint8_t cueue_type,int playmode)
+{
+	int cidx = cueueidx[cueue_type]-1;
+	cueues[cidx].playmode=playmode;
+}
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const uint16_t count)
 {
@@ -281,37 +285,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
 		animations[cueues[cidx].active_in_cueue].init_fp();
-#ifdef LAUNCHPAD
-		printf("%i %i \n",cidx,cueues[cidx].playmode);
-		for(int pm =1;pm < 5 ; pm++)
-		{
-			if(cueues[cidx].playmode == pm)
-				launchpad_setMatrix(cidx*2,pm-1,3,3,0);
-			else
-			{
-
-			if(pm == 4)
-					if(cueues[cidx].test_in_cueue != -1)
-						launchpad_setMatrix(cidx*2,pm-1,3,0,0);
-					else
-						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
-				else if(pm == 3)
-					if(cueues[cidx].off_in_cueue != -1)
-						launchpad_setMatrix(cidx*2,pm-1,1,0,0);
-					else
-						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
-				else if(pm == 2)
-					launchpad_setMatrix(cidx*2,pm-1,2,0,0);
-			}
-		}
-		for(int i =0;i<cueues[cidx].length;i++)
-		{
-			if(cueues[cidx].active_item == i)
-				launchpad_setMatrix(cidx*2,4+i,0,3,0);
-			else
-				launchpad_setMatrix(cidx*2,4+i,1,1,0);
-		}
-#endif
 	}
 
 	uint32_t tick_count_ui = 0;
@@ -326,7 +299,11 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	while(running) {
 
 		uint32_t update_ui = 0;
-		
+	
+		if(last_frame_ui ==0)
+			update_ui=1;
+
+
 		KeyboardEvent e;
 		
 		

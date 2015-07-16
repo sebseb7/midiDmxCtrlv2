@@ -28,6 +28,7 @@ static void deinit(void)
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
 	registerAnimation(init,tick,deinit, PAR36,TYPE_NORMAL,40, 8);
+	queueInitialization(PAR36,0);
 }
 
 

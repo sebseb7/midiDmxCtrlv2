@@ -36,6 +36,7 @@ typedef uint8_t (*tick_fun)(void);
 
 
 void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t cueue, uint8_t cueue_type, uint16_t t, uint16_t duration);
+void queueInitialization(uint8_t cueue_type,int playmode);
 
 void setLedX(uint8_t x, uint8_t r,uint8_t g,uint8_t b);
 void setCh(uint8_t chan, uint8_t value);
