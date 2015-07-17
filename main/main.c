@@ -189,6 +189,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		
 #ifdef LAUNCHPAD
 	launchpad_init();
+
+
+	launchpad_setSide(5,2,2,0);
+	int display_mode = 0;
 #endif
 
 #ifdef KORG_CTRL
@@ -296,15 +300,11 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 	struct timeval tv;
 
+	uint32_t update_ui = 1;
 
 
 
 	while(running) {
-
-		uint32_t update_ui = 0;
-	
-		if(last_frame_ui ==0)
-			update_ui=1;
 
 
 		KeyboardEvent e;
@@ -337,71 +337,102 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 #ifdef LAUNCHPAD
 	while(launchpad_poll(&e)) 
 		{
-			for(int cidx=0;cidx < cueuecount;cidx++)
+			if(display_mode == 0)
 			{
-				for(int pm =1;pm < 5 ; pm++)
-					if((e.type == 144)&&(e.x==lpmap[(cidx*16+pm)-1])&&(e.y==127))
+				int cidx=0;
+				for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
+				{
+					if(cueues[cidx_l].visible)
 					{
-						if(cueues[cidx].playmode == pm)
+						for(int pm =1;pm < 5 ; pm++)
+							if((e.type == 144)&&(e.x==lpmap[(cidx*16+pm)-1])&&(e.y==127))
+							{
+								if(cueues[cidx_l].playmode == pm)
+								{
+									cueues[cidx_l].playmode = 0;
+									update_ui=1;
+								}
+								else
+								{
+									if((pm == 4)&&(cueues[cidx_l].test_in_cueue != -1))
+									{
+										cueues[cidx_l].playmode = pm;
+										update_ui=1;
+									}
+									else if((pm == 3)&&(cueues[cidx_l].off_in_cueue != -1))
+									{
+										cueues[cidx_l].playmode = pm;
+										update_ui=1;
+									}
+									else if(pm < 3)
+									{
+										cueues[cidx_l].playmode = pm;
+										update_ui=1;
+									}
+								}
+							}
+					
+						if((cueues[cidx_l].playmode == 1)||(cueues[cidx_l].playmode==2))
 						{
-							cueues[cidx].playmode = 0;
+							int new_idx =  cueues[cidx_l].active_item;
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+4])&&(e.x <= lpmap[(cidx*16)+7]))
+							{
+								int new_idx_tmp = e.x-(4+(cidx*32));
+								if(new_idx_tmp < cueues[cidx_l].length)
+								{
+									new_idx = new_idx_tmp;
+								}
+							}
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+							{
+								printf("ssdsdsd: %i\n",e.x);
+								int new_idx_tmp = e.x-(12+(cidx*32));
+								if(new_idx_tmp < cueues[cidx_l].length)
+								{
+									new_idx = new_idx_tmp;
+								}
+							}
+						
+							while(new_idx != cueues[cidx_l].active_item)
+							{
+								update_ui=1;
+						
+								animations[cueues[cidx_l].active_in_cueue].deinit_fp();
+						
+								cueues[cidx_l].active_item++;
+								if(cueues[cidx_l].length == cueues[cidx_l].active_item)
+									cueues[cidx_l].active_item=0;
+
+								cueues[cidx_l].active_in_cueue=animations[cueues[cidx_l].active_in_cueue].next_in_cueue;
+								cueues[cidx_l].tick=0;
+								animations[cueues[cidx_l].active_in_cueue].init_fp();
+							}	
+						}
+						cidx++;
+					}
+				}
+			}
+			else if(display_mode == 1)
+			{
+				if((e.type == 144)&&(e.y == 127)&&((e.x%16) < 8))
+				{
+					int key = ((e.x-(e.x%8))/2)+e.x%8;
+
+					if(key < cueuecount)
+					{
+						if(cueues[key].visible==0)
+						{
+							cueues[key].visible=1;
 							update_ui=1;
 						}
 						else
 						{
-							if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
-							{
-								cueues[cidx].playmode = pm;
-								update_ui=1;
-							}
-							else if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
-							{
-								cueues[cidx].playmode = pm;
-								update_ui=1;
-							}
-							else if(pm < 3)
-							{
-								cueues[cidx].playmode = pm;
-								update_ui=1;
-							}
+							cueues[key].visible=0;
+							update_ui=1;
 						}
 					}
-			
-				if((cueues[cidx].playmode == 1)||(cueues[cidx].playmode==2))
-				{
-					int new_idx =  cueues[cidx].active_item;
-					if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+4])&&(e.x <= lpmap[(cidx*16)+7]))
-					{
-						int new_idx_tmp = e.x-(4+(cidx*32));
-						if(new_idx_tmp < cueues[cidx].length)
-						{
-							new_idx = new_idx_tmp;
-						}
-					}
-					if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
-					{
-						printf("ssdsdsd: %i\n",e.x);
-						int new_idx_tmp = e.x-(12+(cidx*32));
-						if(new_idx_tmp < cueues[cidx].length)
-						{
-							new_idx = new_idx_tmp;
-						}
-					}
-					
-					while(new_idx != cueues[cidx].active_item)
-					{
-						update_ui=1;
-					
-						animations[cueues[cidx].active_in_cueue].deinit_fp();
-					
-						cueues[cidx].active_item++;
-						if(cueues[cidx].length == cueues[cidx].active_item)
-							cueues[cidx].active_item=0;
 
-						cueues[cidx].active_in_cueue=animations[cueues[cidx].active_in_cueue].next_in_cueue;
-						cueues[cidx].tick=0;
-						animations[cueues[cidx].active_in_cueue].init_fp();
-					}	
+
 				}
 			}
 
@@ -431,14 +462,21 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				toggle[4] ^= 1;
 				update_ui=1;
 			}
-		//	if((e.type == 144)&&(e.y == 127)&&(e.x>lpmap[(cidx*16+pm)-1]&&(e.x < 0+animationcount))
-		//	{
-		//		new_animation = e.x;
-		//	}
-		//	if((e.type == 144)&&(e.y == 127)&&(e.x>=16)&&(e.x<24)&&(e.x < 16+animationcount-8))
-		//	{
-				//new_animation = e.x-16+8;
-		//	}
+			if((e.type == 144)&&(e.x==88)&&(e.y==127))
+			{
+				update_ui=1;
+				if(display_mode != 1)
+				{
+					display_mode = 1;
+					launchpad_setSide(5,2,2,1);
+				}
+				else
+				{
+					display_mode = 0;
+					launchpad_setSide(5,2,2,0);
+				}
+			}
+			
 			printf("%d %d %d\n", e.x, e.y, e.type);
 		}
 
@@ -450,132 +488,85 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			{
 				poti[e.x-16] = e.y;
 			}
-			if((e.type == 176)&&(e.y == 127)&&(e.x>=32)&&(e.x<40)&&(e.x < 32+animationcount))
-			{
-				//new_animation = e.x-32;
-			}
-			if((e.type == 176)&&(e.y == 127)&&(e.x>=48)&&(e.x<56)&&(e.x < 48+animationcount-8))
-			{
-				//new_animation = e.x-48+8;
-			}
-			if((e.type == 176)&&(e.y == 127)&&(e.x>=64)&&(e.x<72)&&(e.x < 64+animationcount-16))
-			{
-				//new_animation = e.x-64+16;
-			}
-			if((e.type == 176)&&(e.x==0))
-			{
-				ch[134]=e.y;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==1))
-			{
-				ch[135]=e.y;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==2))
-			{
-				ch[136]=e.y;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==3))
-			{
-				ch[128]=e.y;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==4))
-			{
-				ch[129]=e.y;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==5))
-			{
-				ch[130]=e.y;
-				update_ui=1;
-			}
-
-			if((e.type == 176)&&(e.x==43)&&(e.y==127))
-			{
-				toggle[0] ^= 1;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==44)&&(e.y==127))
-			{
-				toggle[1] ^= 1;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==42)&&(e.y==127))
-			{
-				toggle[2] ^= 1;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==41)&&(e.y==127))
-			{
-				toggle[3] ^= 1;
-				update_ui=1;
-			}
-			if((e.type == 176)&&(e.x==45)&&(e.y==127))
-			{
-				toggle[4] ^= 1;
-				update_ui=1;
-			}
 		}
 #endif
 
 
 		if(update_ui)
 		{
+			update_ui=0;
 #ifdef LAUNCHPAD
-	//		keyboard_send(&midi_launch,176,104,toggle[0]*15);
-	//		keyboard_send(&midi_launch,176,105,toggle[1]*15);
-	//		keyboard_send(&midi_launch,176,106,toggle[2]*15);
-	//		keyboard_send(&midi_launch,176,107,toggle[3]*15);
-	//		keyboard_send(&midi_launch,176,108,toggle[4]*15);
-	
-			for(int cidx=0;cidx < cueuecount;cidx++)
+
+			if(display_mode==0)
 			{
-				for(int pm =1;pm < 5 ; pm++)
-					if(cueues[cidx].playmode == pm)
-						launchpad_setMatrix(cidx*2,pm-1,3,3,0);
-					else
-					{
-						launchpad_setMatrix(cidx*2,pm-1,0,0,0);
-						if((pm == 4)&&(cueues[cidx].test_in_cueue != -1))
-							launchpad_setMatrix(cidx*2,pm-1,3,0,0);
-						if((pm == 3)&&(cueues[cidx].off_in_cueue != -1))
-							launchpad_setMatrix(cidx*2,pm-1,1,0,0);
-						if(pm < 3)
-							launchpad_setMatrix(cidx*2,pm-1,2,0,0);
-					}
-		
-				for(int i =0;i<cueues[cidx].length;i++)
+
+				int cidx=0;
+				for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
 				{
-					if((cueues[cidx].playmode==0)||(cueues[cidx].playmode>2))
+					if(cueues[cidx_l].visible)
 					{
-						launchpad_setMatrix(cidx*2,4+i,1,0,0);
-					}
-					else
-					{
-						if(cueues[cidx].active_item == i)
-							launchpad_setMatrix(cidx*2,4+i,0,3,0);
-						else
-							if(cueues[cidx].playmode==2)
+						for(int pm =1;pm < 5 ; pm++)
+							if(cueues[cidx_l].playmode == pm)
+								launchpad_setMatrix(cidx*2,pm-1,3,3,0);
+							else
+							{
+								launchpad_setMatrix(cidx*2,pm-1,0,0,0);
+								if((pm == 4)&&(cueues[cidx_l].test_in_cueue != -1))
+									launchpad_setMatrix(cidx*2,pm-1,3,0,0);
+								if((pm == 3)&&(cueues[cidx_l].off_in_cueue != -1))
+									launchpad_setMatrix(cidx*2,pm-1,1,0,0);
+								if(pm < 3)
+									launchpad_setMatrix(cidx*2,pm-1,2,0,0);
+							}
+				
+						for(int i =0;i<cueues[cidx_l].length;i++)
+						{
+							if((cueues[cidx_l].playmode==0)||(cueues[cidx_l].playmode>2))
 							{
 								launchpad_setMatrix(cidx*2,4+i,1,0,0);
 							}
 							else
 							{
-								launchpad_setMatrix(cidx*2,4+i,1,1,0);
+								if(cueues[cidx_l].active_item == i)
+									launchpad_setMatrix(cidx*2,4+i,0,3,0);
+								else
+									if(cueues[cidx_l].playmode==2)
+									{
+										launchpad_setMatrix(cidx*2,4+i,1,0,0);
+									}
+									else
+									{
+										launchpad_setMatrix(cidx*2,4+i,1,1,0);
+									}
 							}
+						}
+				
+						cidx++;
 					}
 				}
 			}
-#endif
-#ifdef KORG_CTRL
-			keyboard_send(&midi_korg,176,43,toggle[0]*127);
-			keyboard_send(&midi_korg,176,44,toggle[1]*127);
-			keyboard_send(&midi_korg,176,42,toggle[2]*127);
-			keyboard_send(&midi_korg,176,41,toggle[3]*127);
-			keyboard_send(&midi_korg,176,45,toggle[4]*127);
+			else if(display_mode==1)
+			{
+				for(int i=0;i<64;i++)
+				{
+					if(i < cueuecount)
+					{
+						if(cueues[i].visible==1)
+						{
+							launchpad_setMatrix((i-(i%8))/8,i%8,0,3,0);
+						}
+						else
+						{
+							launchpad_setMatrix((i-(i%8))/8,i%8,1,0,0);
+						}
+					}
+					else
+					{
+						launchpad_setMatrix((i-(i%8))/8,i%8,0,0,0);
+					}
+				}
+				printf("\n");
+			}
 #endif
 		}
 
@@ -704,61 +695,16 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 			if((cueues[cidx].tick >= animations[cueues[cidx].active_in_cueue].duration)&& cueues[cidx].playmode == 1)
 			{
+				update_ui = 1;
+
 				animations[cueues[cidx].active_in_cueue].deinit_fp();
 
-#ifdef LAUNCHPAD
-				launchpad_setMatrix(cidx*2,4+cueues[cidx].active_item,1,1,0);
-#endif
-#ifdef KORG_CTRL
-				
-
-				
-
-
-
-//				if(current_animation < 8)
-//				{
-//					keyboard_send(&midi_korg,176,32+current_animation,0);
-//				}
-//				else if(current_animation < 16)
-//				{
-//					keyboard_send(&midi_korg,176,48+(current_animation-8),0);
-//				}
-#endif
-
-				/*if(new_animation != current_animation)
-				{
-					current_animation= new_animation;
-				}
-				else
-				{
-					current_animation++;
-					if(current_animation == animationcount)
-					{
-						current_animation = 0;
-					}
-					new_animation= current_animation;
-				}*/
-				
 				cueues[cidx].active_item++;
 				if(cueues[cidx].length == cueues[cidx].active_item)
 					cueues[cidx].active_item=0;
 
 				cueues[cidx].active_in_cueue=animations[cueues[cidx].active_in_cueue].next_in_cueue;
 
-#ifdef LAUNCHPAD
-				launchpad_setMatrix(cidx*2,4+cueues[cidx].active_item,0,3,0);
-#endif
-#ifdef KORG_CTRL
-//				if(current_animation < 8)
-//				{
-//					keyboard_send(&midi_korg,176,32+current_animation,127);
-//				}
-//				else if(current_animation < 16)
-//				{
-//					keyboard_send(&midi_korg,176,48+(current_animation-8),127);
-//				}
-#endif
 				cueues[cidx].tick=0;
 
 				animations[cueues[cidx].active_in_cueue].init_fp();
