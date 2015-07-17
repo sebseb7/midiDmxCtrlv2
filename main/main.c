@@ -367,13 +367,13 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 						if((cueues[cidx_l].active == 1)&&(cueues[cidx_l].in_test==0)&&(cueues[cidx_l].in_off==0))
 						{
+
+
 							int new_idx =  cueues[cidx_l].active_item;
-
-
 
 							if(queue_setup != cidx_l+1)
 							{
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
 								{
 									int new_idx_tmp = e.x-(2+(cidx*16));
 									if(new_idx_tmp < cueues[cidx_l].length)
@@ -381,7 +381,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 										new_idx = new_idx_tmp;
 									}
 								}
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
 								{
 									printf("ssdsdsd: %i\n",e.x);
 									int new_idx_tmp = e.x-(10+(cidx*16));
@@ -437,8 +437,15 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 								}
 							}
 
+							int error = 0;
 							while(new_idx != cueues[cidx_l].active_item)
 							{
+								error++;
+								if(error > 20)
+								{
+									printf("error1 %i %i %i\n",new_idx,cidx_l,cueues[cidx_l].active);
+									exit(0);
+								}
 								update_ui=1;
 
 								cueues[cidx_l].list[cueues[cidx_l].active_item].deinit_fp();
@@ -859,9 +866,17 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				update_ui = 1;
 
 				cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+								
 
+				int error = 0;
 				do
 				{
+								error++;
+								if(error > 20)
+								{
+									printf("error2\n");
+									exit(0);
+								}
 					cueues[cidx].active_item++;
 					if(cueues[cidx].length == cueues[cidx].active_item)
 						cueues[cidx].active_item=0;
