@@ -662,6 +662,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 										{
 											launchpad_setMatrix(cidx*2,2+i,1,0,0);
 										}
+										else if(cueues[cidx_l].list[i].active==0)
+										{
+											launchpad_setMatrix(cidx*2,2+i,1,0,0);
+										}
 										else
 										{
 											launchpad_setMatrix(cidx*2,2+i,1,1,0);
