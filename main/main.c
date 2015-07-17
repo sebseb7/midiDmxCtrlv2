@@ -339,7 +339,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				{
 					if(cueues[cidx_l].visible)
 					{
-						if((e.type == 144)&&(e.x==lpmap[cidx*16])&&(e.y==127))
+						if((e.type == 144)&&(e.x==lpmap[cidx*8])&&(e.y==127))
 						{
 							update_ui=1;
 							if(cueues[cidx_l].active==1)
@@ -351,7 +351,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 								cueues[cidx_l].active=1;
 							}
 						}
-						if((e.type == 144)&&(e.x==lpmap[cidx*16+1])&&(e.y==127))
+						if((e.type == 144)&&(e.x==lpmap[cidx*8+1])&&(e.y==127))
 						{
 							update_ui=1;
 							if(queue_setup==cidx_l+1)
@@ -375,7 +375,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
 								{
-									int new_idx_tmp = e.x-(2+(cidx*32));
+									int new_idx_tmp = e.x-(2+(cidx*16));
 									if(new_idx_tmp < cueues[cidx_l].length)
 									{
 										new_idx = new_idx_tmp;
@@ -384,7 +384,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
 								{
 									printf("ssdsdsd: %i\n",e.x);
-									int new_idx_tmp = e.x-(10+(cidx*32));
+									int new_idx_tmp = e.x-(10+(cidx*16));
 									if(new_idx_tmp < cueues[cidx_l].length)
 									{
 										new_idx = new_idx_tmp;
@@ -393,9 +393,9 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							}
 							else
 							{
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
 								{
-									int new_idx_tmp = e.x-(2+(cidx*32));
+									int new_idx_tmp = e.x-(2+(cidx*16));
 									if(new_idx_tmp < cueues[cidx_l].length)
 									{
 										update_ui=1;
@@ -414,9 +414,9 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 										}
 									}
 								}
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
 								{
-									int new_idx_tmp = e.x-(10+(cidx*32));
+									int new_idx_tmp = e.x-(10+(cidx*16));
 									if(new_idx_tmp < cueues[cidx_l].length)
 									{
 										update_ui=1;
@@ -452,6 +452,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							}	
 						}
 						cidx++;
+						if(cueues[cidx_l].length>6)
+							cidx++;
 					}
 				}
 			}
@@ -597,15 +599,15 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					{
 						if(cueues[cidx_l].active == 1)
 						{
-							launchpad_setMatrix(cidx*2,0,0,3,0);
+							launchpad_setMatrix(cidx,0,0,3,0);
 						}
 						else
 						{
-							launchpad_setMatrix(cidx*2,0,1,0,0);
+							launchpad_setMatrix(cidx,0,1,0,0);
 						}
 						if(queue_setup == cidx_l+1)
 						{
-							launchpad_setMatrix(cidx*2,1,3,0,1);
+							launchpad_setMatrix(cidx,1,3,0,1);
 
 
 							if(cueues[cidx_l].paused)
@@ -659,39 +661,39 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								if(cueues[cidx_l].list[i].active==1)
 								{
-									launchpad_setMatrix(cidx*2,2+i,0,3,0);
+									launchpad_setMatrix(cidx,2+i,0,3,0);
 								}
 								else
 								{
-									launchpad_setMatrix(cidx*2,2+i,1,0,0);
+									launchpad_setMatrix(cidx,2+i,1,0,0);
 								}
 							}
 						}
 						else
 						{
-							launchpad_setMatrix(cidx*2,1,1,0,0);
+							launchpad_setMatrix(cidx,1,1,0,0);
 							for(int i =0;i<cueues[cidx_l].length;i++)
 							{
 								if((cueues[cidx_l].active==0)||(cueues[cidx_l].in_off==1)||(cueues[cidx_l].in_test==1))
 								{
-									launchpad_setMatrix(cidx*2,2+i,1,0,0);
+									launchpad_setMatrix(cidx,2+i,1,0,0);
 								}
 								else
 								{
 									if(cueues[cidx_l].active_item == i)
-										launchpad_setMatrix(cidx*2,2+i,0,3,0);
+										launchpad_setMatrix(cidx,2+i,0,3,0);
 									else
 										if(cueues[cidx_l].paused==1)
 										{
-											launchpad_setMatrix(cidx*2,2+i,1,0,0);
+											launchpad_setMatrix(cidx,2+i,1,0,0);
 										}
 										else if(cueues[cidx_l].list[i].active==0)
 										{
-											launchpad_setMatrix(cidx*2,2+i,1,0,0);
+											launchpad_setMatrix(cidx,2+i,1,0,0);
 										}
 										else
 										{
-											launchpad_setMatrix(cidx*2,2+i,1,1,0);
+											launchpad_setMatrix(cidx,2+i,1,1,0);
 										}
 								}
 							}
@@ -699,6 +701,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				
 				
 						cidx++;
+						if(cueues[cidx_l].length>6)
+							cidx++;
 					}
 				}
 			}
