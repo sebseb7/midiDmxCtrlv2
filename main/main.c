@@ -163,7 +163,7 @@ void queueInitialization(uint8_t cueue_type,int playmode,int visible)
 	cueues[cidx].visible=visible;
 }
 
-void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const uint16_t count)
+void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count)
 {
 	if(animationcount == MAX_ANIMATIONS)
 		return;
@@ -174,7 +174,7 @@ void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun
 
 	if(cueue_type == TYPE_NORMAL)
 	{
-		animations[animationcount].duration = t*count;
+		animations[animationcount].duration = count*t;
 		animations[animationcount].timing = 1000000/t;
 	}
 
