@@ -345,21 +345,72 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 						if((cueues[cidx_l].active == 1)&&(cueues[cidx_l].in_test==0)&&(cueues[cidx_l].in_off==0))
 						{
 							int new_idx =  cueues[cidx_l].active_item;
-							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
+							
+							
+							
+							if(queue_setup != cidx_l+1)
 							{
-								int new_idx_tmp = e.x-(2+(cidx*32));
-								if(new_idx_tmp < cueues[cidx_l].length)
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
 								{
-									new_idx = new_idx_tmp;
+									int new_idx_tmp = e.x-(2+(cidx*32));
+									if(new_idx_tmp < cueues[cidx_l].length)
+									{
+										new_idx = new_idx_tmp;
+									}
+								}
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+								{
+									printf("ssdsdsd: %i\n",e.x);
+									int new_idx_tmp = e.x-(10+(cidx*32));
+									if(new_idx_tmp < cueues[cidx_l].length)
+									{
+										new_idx = new_idx_tmp;
+									}
 								}
 							}
-							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+							else
 							{
-								printf("ssdsdsd: %i\n",e.x);
-								int new_idx_tmp = e.x-(10+(cidx*32));
-								if(new_idx_tmp < cueues[cidx_l].length)
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
 								{
-									new_idx = new_idx_tmp;
+									int new_idx_tmp = e.x-(2+(cidx*32));
+									if(new_idx_tmp < cueues[cidx_l].length)
+									{
+										update_ui=1;
+										if(cueues[cidx_l].list[new_idx_tmp].active==0)
+										{
+											cueues[cidx_l].list[new_idx_tmp].active=1;
+											cueues[cidx_l].active_elements++;
+										}
+										else
+										{
+											if(cueues[cidx_l].active_elements > 1)
+											{
+												cueues[cidx_l].list[new_idx_tmp].active=0;
+												cueues[cidx_l].active_elements--;
+											}
+										}
+									}
+								}
+								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+8])&&(e.x <= lpmap[(cidx*16)+15]))
+								{
+									int new_idx_tmp = e.x-(10+(cidx*32));
+									if(new_idx_tmp < cueues[cidx_l].length)
+									{
+										update_ui=1;
+										if(cueues[cidx_l].list[new_idx_tmp].active==0)
+										{
+											cueues[cidx_l].list[new_idx_tmp].active=1;
+											cueues[cidx_l].active_elements++;
+										}
+										else
+										{
+											if(cueues[cidx_l].active_elements > 1)
+											{
+												cueues[cidx_l].list[new_idx_tmp].active=0;
+												cueues[cidx_l].active_elements--;
+											}
+										}
+									}
 								}
 							}
 						
@@ -463,6 +514,11 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 						}
 					}
 				}
+
+
+
+
+
 			}
 
 
@@ -773,9 +829,13 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 				cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
 
-				cueues[cidx].active_item++;
-				if(cueues[cidx].length == cueues[cidx].active_item)
-					cueues[cidx].active_item=0;
+				do
+				{
+					cueues[cidx].active_item++;
+					if(cueues[cidx].length == cueues[cidx].active_item)
+						cueues[cidx].active_item=0;
+				}
+				while(cueues[cidx].list[cueues[cidx].active_item].active==0);
 
 				cueues[cidx].tick=0;
 
