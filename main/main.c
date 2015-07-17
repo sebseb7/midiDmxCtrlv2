@@ -74,6 +74,7 @@ struct cueue {
 	uint8_t in_test;
 	uint8_t in_off;
 	uint8_t active_item;
+	uint8_t active_elements;
 	uint32_t tick;
 	uint32_t last_frame;
 } cueues[MAX_CUEUES];
@@ -106,6 +107,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		for(int i = 0; i < MAX_CUEUES; i++)
 		{
 			cueues[i].length = 0;
+			cueues[i].active_elements = 0;
 			cueues[i].off_available=0;
 			cueues[i].test_available=0;
 			cueues[i].tick=0;
@@ -146,6 +148,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].list[cueues[cidx].length].timing = t;
 		cueues[cidx].list[cueues[cidx].length].active = 1;
 		cueues[cidx].length++;
+		cueues[cidx].active_elements++;
 	}
 	
 	if(cueue_type == TYPE_OFF)
@@ -572,33 +575,45 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								launchpad_setTop(3,0,0,0);
 							}
+							
+							for(int i =0;i<cueues[cidx_l].length;i++)
+							{
+								if(cueues[cidx_l].list[i].active==1)
+								{
+									launchpad_setMatrix(cidx*2,2+i,0,3,0);
+								}
+								else
+								{
+									launchpad_setMatrix(cidx*2,2+i,1,0,0);
+								}
+							}
 						}
 						else
 						{
 							launchpad_setMatrix(cidx*2,1,1,0,0);
+							for(int i =0;i<cueues[cidx_l].length;i++)
+							{
+								if((cueues[cidx_l].active==0)||(cueues[cidx_l].in_off==1)||(cueues[cidx_l].in_test==1))
+								{
+									launchpad_setMatrix(cidx*2,2+i,1,0,0);
+								}
+								else
+								{
+									if(cueues[cidx_l].active_item == i)
+										launchpad_setMatrix(cidx*2,2+i,0,3,0);
+									else
+										if(cueues[cidx_l].paused==1)
+										{
+											launchpad_setMatrix(cidx*2,2+i,1,0,0);
+										}
+										else
+										{
+											launchpad_setMatrix(cidx*2,2+i,1,1,0);
+										}
+								}
+							}
 						}
 				
-						for(int i =0;i<cueues[cidx_l].length;i++)
-						{
-							if((cueues[cidx_l].active==0)||(cueues[cidx_l].in_off==1)||(cueues[cidx_l].in_test==1))
-							{
-								launchpad_setMatrix(cidx*2,2+i,1,0,0);
-							}
-							else
-							{
-								if(cueues[cidx_l].active_item == i)
-									launchpad_setMatrix(cidx*2,2+i,0,3,0);
-								else
-									if(cueues[cidx_l].paused==1)
-									{
-										launchpad_setMatrix(cidx*2,2+i,1,0,0);
-									}
-									else
-									{
-										launchpad_setMatrix(cidx*2,2+i,1,1,0);
-									}
-							}
-						}
 				
 						cidx++;
 					}
