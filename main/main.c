@@ -151,13 +151,13 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].length++;
 		cueues[cidx].active_elements++;
 	}
-	
+
 	if(cueue_type == TYPE_OFF)
 	{
 		cueues[cidx].off = tick;
 		cueues[cidx].off_available = 1;
 	}
-	
+
 	if(cueue_type == TYPE_TEST)
 	{
 		cueues[cidx].test = tick;
@@ -165,7 +165,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 	}
 
 	return cidx;
-		
+
 
 }
 
@@ -184,7 +184,7 @@ void queueAniActive(uint8_t cueue_type,int item,int active)
 		if((cueues[cidx].list[item].active == 0)&&(active==1))
 		{
 			cueues[cidx].list[item].active=1;
-		cueues[cidx].active_elements++;
+			cueues[cidx].active_elements++;
 			update_ui=1;
 		}
 		if((cueues[cidx].list[item].active == 1)&&(active==0))
@@ -213,7 +213,7 @@ void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun
 
 
 int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unused__))) {
-		
+
 #ifdef LAUNCHPAD
 	launchpad_init();
 
@@ -284,7 +284,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	ch[0]=0;
-		
+
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
 		cueues[cidx].list[cueues[cidx].active_item].init_fp();
@@ -303,9 +303,9 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 		KeyboardEvent e;
-		
-		
-		
+
+
+
 #ifdef SDL_OUTPUT
 		SDL_Event ev;
 		while(SDL_PollEvent(&ev)) {
@@ -330,7 +330,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 #ifdef LAUNCHPAD
-	while(launchpad_poll(&e)) 
+		while(launchpad_poll(&e)) 
 		{
 			if(display_mode == 0)
 			{
@@ -364,13 +364,13 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							}
 						}
 
-					
+
 						if((cueues[cidx_l].active == 1)&&(cueues[cidx_l].in_test==0)&&(cueues[cidx_l].in_off==0))
 						{
 							int new_idx =  cueues[cidx_l].active_item;
-							
-							
-							
+
+
+
 							if(queue_setup != cidx_l+1)
 							{
 								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*16)+2])&&(e.x <= lpmap[(cidx*16)+7]))
@@ -436,13 +436,13 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 									}
 								}
 							}
-						
+
 							while(new_idx != cueues[cidx_l].active_item)
 							{
 								update_ui=1;
-						
+
 								cueues[cidx_l].list[cueues[cidx_l].active_item].deinit_fp();
-						
+
 								cueues[cidx_l].active_item++;
 								if(cueues[cidx_l].length == cueues[cidx_l].active_item)
 									cueues[cidx_l].active_item=0;
@@ -562,7 +562,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					launchpad_setSide(5,2,2,0);
 				}
 			}
-			
+
 			printf("%d %d %d\n", e.x, e.y, e.type);
 		}
 
@@ -582,7 +582,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		{
 			update_ui=0;
 #ifdef LAUNCHPAD
-			
+
 			if(queue_setup == 0)
 			{
 				for(int i = 0;i<8;i++)
@@ -656,7 +656,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								launchpad_setTop(3,0,0,0);
 							}
-							
+
 							for(int i =0;i<cueues[cidx_l].length;i++)
 							{
 								if(cueues[cidx_l].list[i].active==1)
@@ -698,8 +698,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 								}
 							}
 						}
-				
-				
+
+
 						cidx++;
 						if(cueues[cidx_l].length>6)
 							cidx++;
@@ -761,10 +761,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				if(cueues[cidx].paused==0) cueues[cidx].tick++;
 				gettimeofday(&tv,NULL);
 				cueues[cidx].last_frame = tv.tv_usec ;
-			
+
 			}
-				
-			
+
+
 
 		}
 
@@ -846,7 +846,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		}
 #endif
 		usleep(2000);
-			
+
 
 
 
