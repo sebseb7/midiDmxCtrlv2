@@ -32,10 +32,9 @@ void intHandler(int dummy)
 	running = 0*dummy;
 }
 
-#define MAX_ANIMATIONS 200
 #define MAX_CUEUES 20
+#define MAX_ANI_PER_CUEUE 30
 
-int animationcount = 0;
 int cueuecount = 0;
 
 static const uint8_t lpmap[64] = {
@@ -51,13 +50,22 @@ static const uint8_t lpmap[64] = {
 };
 
 
+struct animation {
+	init_fun init_fp;
+	tick_fun tick_fp;
+	deinit_fun deinit_fp;
+	uint16_t active;
+	uint32_t duration;
+	uint32_t timing;
+};
+
 
 struct cueue {
-	uint16_t first_in_cueue;
-	uint16_t last_in_cueue;
-	uint16_t active_in_cueue;
-	int16_t test_in_cueue;
-	int16_t off_in_cueue;
+	struct animation list[MAX_ANI_PER_CUEUE];
+	tick_fun test;
+	tick_fun off;
+	uint8_t test_available;
+	uint8_t off_available;
 	uint8_t length;
 	uint8_t visible;
 	uint8_t active;
@@ -72,15 +80,6 @@ struct cueue {
 
 uint16_t cueueidx[MAX_CUEUES];
 
-struct animation {
-	init_fun init_fp;
-	tick_fun tick_fp;
-	deinit_fun deinit_fp;
-	uint16_t cueue;
-	uint16_t next_in_cueue;
-	uint32_t duration;
-	uint32_t timing;
-} animations[MAX_ANIMATIONS];
 
 
 void setCh(uint8_t chan, uint8_t value)
@@ -100,15 +99,15 @@ uint8_t getIn(uint8_t chan)
 
 static int cueues_initialized = 0;
 
-void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t animation_position)
+int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint32_t d, const uint32_t t)
 {
 	if(cueues_initialized == 0)
 	{
 		for(int i = 0; i < MAX_CUEUES; i++)
 		{
 			cueues[i].length = 0;
-			cueues[i].off_in_cueue=-1;
-			cueues[i].test_in_cueue=-1;
+			cueues[i].off_available=0;
+			cueues[i].test_available=0;
 			cueues[i].tick=0;
 			cueues[i].last_frame=0;
 			cueues[i].active=1;
@@ -139,26 +138,29 @@ void addToCueue(const uint16_t cueue,const uint8_t cueue_type,const uint16_t ani
 
 	if(cueue_type == TYPE_NORMAL)
 	{
-		if(cueues[cidx].length == 0)
-		{
-			cueues[cidx].active_in_cueue=animation_position;
-			cueues[cidx].first_in_cueue=animation_position;
-		}
-		else
-		{
-			animations[cueues[cidx].last_in_cueue].next_in_cueue = animation_position;
-		}
 
-		animations[animation_position].next_in_cueue = cueues[cidx].first_in_cueue;
-		cueues[cidx].last_in_cueue=animation_position;
+		cueues[cidx].list[cueues[cidx].length].init_fp = init;
+		cueues[cidx].list[cueues[cidx].length].tick_fp = tick;
+		cueues[cidx].list[cueues[cidx].length].deinit_fp = deinit;
+		cueues[cidx].list[cueues[cidx].length].duration = d;
+		cueues[cidx].list[cueues[cidx].length].timing = t;
+		cueues[cidx].list[cueues[cidx].length].active = 1;
 		cueues[cidx].length++;
 	}
 	
 	if(cueue_type == TYPE_OFF)
-		cueues[cidx].off_in_cueue=animation_position;
+	{
+		cueues[cidx].off = tick;
+		cueues[cidx].off_available = 1;
+	}
 	
 	if(cueue_type == TYPE_TEST)
-		cueues[cidx].test_in_cueue=animation_position;
+	{
+		cueues[cidx].test = tick;
+		cueues[cidx].test_available = 1;
+	}
+
+	return cidx;
 		
 
 }
@@ -172,23 +174,14 @@ void queueInitialization(uint8_t cueue_type,int active,int visible)
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count)
 {
-	if(animationcount == MAX_ANIMATIONS)
-		return;
-	animations[animationcount].init_fp = init;
-	animations[animationcount].tick_fp = tick;
-	animations[animationcount].deinit_fp = deinit;
-	animations[animationcount].cueue = cueue;
-
 	if(cueue_type == TYPE_NORMAL)
 	{
-		animations[animationcount].duration = count*t;
-		animations[animationcount].timing = 1000000/t;
+		addToCueue(cueue,cueue_type,init,tick,deinit,count*t,1000000/t);
 	}
-
-	addToCueue(cueue,cueue_type,animationcount);
-
-	animationcount++;
-
+	else
+	{
+		addToCueue(cueue,cueue_type,init,tick,deinit,0,0);
+	}
 }
 
 
@@ -255,15 +248,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	}
 #endif
 
-#ifdef KORG_CTRL
-	for(uint8_t i = 32;i <= 39;i++)
-	{
-		keyboard_send(&midi_korg,176,i,0);
-		keyboard_send(&midi_korg,176,i+16,0);
-		keyboard_send(&midi_korg,176,i+32,0);
-	}
-	keyboard_send(&midi_korg,176,32,127);
-#endif
 	srand(time(NULL));
 
 	signal(SIGINT, intHandler);
@@ -276,7 +260,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
-		animations[cueues[cidx].active_in_cueue].init_fp();
+		cueues[cidx].list[cueues[cidx].active_item].init_fp();
 	}
 
 	uint32_t tick_count_ui = 0;
@@ -380,15 +364,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								update_ui=1;
 						
-								animations[cueues[cidx_l].active_in_cueue].deinit_fp();
+								cueues[cidx_l].list[cueues[cidx_l].active_item].deinit_fp();
 						
 								cueues[cidx_l].active_item++;
 								if(cueues[cidx_l].length == cueues[cidx_l].active_item)
 									cueues[cidx_l].active_item=0;
 
-								cueues[cidx_l].active_in_cueue=animations[cueues[cidx_l].active_in_cueue].next_in_cueue;
 								cueues[cidx_l].tick=0;
-								animations[cueues[cidx_l].active_in_cueue].init_fp();
+								cueues[cidx_l].list[cueues[cidx_l].active_item].init_fp();
 							}	
 						}
 						cidx++;
@@ -447,7 +430,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				}
 				if((e.type == 176)&&(e.x==106)&&(e.y==127))
 				{
-					if(cueues[queue_setup-1].off_in_cueue != -1)
+					if(cueues[queue_setup-1].off_available == 1)
 					{
 						update_ui=1;
 						if(cueues[queue_setup-1].in_off==1)
@@ -463,7 +446,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				}
 				if((e.type == 176)&&(e.x==107)&&(e.y==127))
 				{
-					if(cueues[queue_setup-1].test_in_cueue != -1)
+					if(cueues[queue_setup-1].test_available == 1)
 					{
 						update_ui=1;
 						if(cueues[queue_setup-1].in_test==1)
@@ -559,7 +542,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								launchpad_setTop(1,1,0,0);
 							}
-							if(cueues[queue_setup-1].off_in_cueue != -1)
+							if(cueues[queue_setup-1].off_available == 1)
 							{
 								if(cueues[cidx_l].in_off)
 								{
@@ -574,7 +557,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							{
 								launchpad_setTop(2,0,0,0);
 							}
-							if(cueues[queue_setup-1].test_in_cueue != -1)
+							if(cueues[queue_setup-1].test_available == 1)
 							{
 								if(cueues[cidx_l].in_test)
 								{
@@ -662,17 +645,17 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 			if(cueues[cidx].in_test == 1)
 			{
-				animations[cueues[cidx].test_in_cueue].tick_fp();
+				cueues[cidx].test();
 			}
 			else if(cueues[cidx].in_off == 1)
 			{
-				animations[cueues[cidx].off_in_cueue].tick_fp();
+				cueues[cidx].off();
 			}
-			else if(((uint32_t)time_diff > animations[cueues[cidx].active_in_cueue].timing)&&(cueues[cidx].active == 1))
+			else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&(cueues[cidx].active == 1))
 			{
 				//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
 
-				animations[cueues[cidx].active_in_cueue].tick_fp();
+				cueues[cidx].list[cueues[cidx].active_item].tick_fp();
 				if(cueues[cidx].paused==0) cueues[cidx].tick++;
 				gettimeofday(&tv,NULL);
 				cueues[cidx].last_frame = tv.tv_usec ;
@@ -703,31 +686,31 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				last_frame_ui = tv.tv_usec - time_diff;
 			}
 #ifdef SDL_OUTPUT			
-		SDL_Rect rect = { 0, 0, 50, 50 };
-		SDL_FillRect(
-			screen, 
-			&rect, 
-			SDL_MapRGB(screen->format,ch[16],ch[17],ch[18])
-		);
-		SDL_Rect rect2 = { 0, 50, 50, 50 };
-		SDL_FillRect(
-			screen, 
-			&rect2, 
-			SDL_MapRGB(screen->format,ch[22],ch[23],ch[24])
-		);
-		SDL_Rect rect3 = { 50, 0, 50, 50 };
-		SDL_FillRect(
-			screen, 
-			&rect3, 
-			SDL_MapRGB(screen->format,ch[28],ch[29],ch[30])
-		);
-		SDL_Rect rect4 = { 50, 50, 50, 50 };
-		SDL_FillRect(
-			screen, 
-			&rect4, 
-			SDL_MapRGB(screen->format,ch[34],ch[35],ch[36])
-		);
-		SDL_Flip(screen);
+			SDL_Rect rect = { 0, 0, 50, 50 };
+			SDL_FillRect(
+				screen, 
+				&rect, 
+				SDL_MapRGB(screen->format,ch[16],ch[17],ch[18])
+			);
+			SDL_Rect rect2 = { 0, 50, 50, 50 };
+			SDL_FillRect(
+				screen, 
+				&rect2, 
+				SDL_MapRGB(screen->format,ch[22],ch[23],ch[24])
+			);
+			SDL_Rect rect3 = { 50, 0, 50, 50 };
+			SDL_FillRect(
+				screen, 
+				&rect3, 
+				SDL_MapRGB(screen->format,ch[28],ch[29],ch[30])
+			);
+			SDL_Rect rect4 = { 50, 50, 50, 50 };
+			SDL_FillRect(
+				screen, 
+				&rect4, 
+				SDL_MapRGB(screen->format,ch[34],ch[35],ch[36])
+			);
+			SDL_Flip(screen);
 #endif
 		}
 
@@ -769,21 +752,19 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		for(int cidx=0;cidx < cueuecount;cidx++)
 		{
 
-			if((cueues[cidx].tick >= animations[cueues[cidx].active_in_cueue].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+			if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
 			{
 				update_ui = 1;
 
-				animations[cueues[cidx].active_in_cueue].deinit_fp();
+				cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
 
 				cueues[cidx].active_item++;
 				if(cueues[cidx].length == cueues[cidx].active_item)
 					cueues[cidx].active_item=0;
 
-				cueues[cidx].active_in_cueue=animations[cueues[cidx].active_in_cueue].next_in_cueue;
-
 				cueues[cidx].tick=0;
 
-				animations[cueues[cidx].active_in_cueue].init_fp();
+				cueues[cidx].list[cueues[cidx].active_item].init_fp();
 			}
 		}
 	}
