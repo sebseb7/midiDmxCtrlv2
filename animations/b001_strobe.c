@@ -15,12 +15,14 @@ static uint8_t tick(void)
 
 static void init(void)
 {
+	queueAniActive(CHASE,0,0);
 	a=0;
 }
 
 
 static void deinit(void)
 {
+	queueAniActive(CHASE,0,1);
 }
 
 

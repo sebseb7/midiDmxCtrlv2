@@ -35,7 +35,8 @@ void intHandler(int dummy)
 #define MAX_CUEUES 20
 #define MAX_ANI_PER_CUEUE 30
 
-int cueuecount = 0;
+static int cueuecount = 0;
+static uint32_t update_ui = 1;
 
 static const uint8_t lpmap[64] = {
 	0 ,1 ,2 ,3 ,4 ,5 ,6 ,7 ,
@@ -174,6 +175,29 @@ void queueInitialization(uint8_t cueue_type,int active,int visible)
 	cueues[cidx].active=active;
 	cueues[cidx].visible=visible;
 }
+void queueAniActive(uint8_t cueue_type,int item,int active)
+{
+	int cidx = cueueidx[cueue_type]-1;
+
+	if(cueues[cidx].length > item)
+	{
+		if((cueues[cidx].list[item].active == 0)&&(active==1))
+		{
+			cueues[cidx].list[item].active=1;
+		cueues[cidx].active_elements++;
+			update_ui=1;
+		}
+		if((cueues[cidx].list[item].active == 1)&&(active==0))
+		{
+			if(cueues[cidx].active_elements>0)
+			{
+				cueues[cidx].list[item].active=0;
+				cueues[cidx].active_elements--;
+				update_ui=1;
+			}
+		}
+	}
+}
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count)
 {
@@ -272,7 +296,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 	struct timeval tv;
 
-	uint32_t update_ui = 1;
 
 
 
