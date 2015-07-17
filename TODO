@@ -15,4 +15,5 @@
 
 
 - queue deactivate: deinit ; queue activate init
+- display cueue and animation labels und button documentation in sdl window
 
