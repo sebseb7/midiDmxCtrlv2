@@ -13,3 +13,6 @@
 - port to stm32f425-disco
 - lauchpad double buffering
 
+
+- queue deactivate: deinit ; queue activate init
+
