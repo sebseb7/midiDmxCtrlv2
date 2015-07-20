@@ -169,11 +169,12 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 
 }
 
-void queueInitialization(uint8_t cueue_type,int active,int visible)
+void queueInitialization(uint8_t cueue_type,int active,int visible,int paused)
 {
 	int cidx = cueueidx[cueue_type]-1;
 	cueues[cidx].active=active;
 	cueues[cidx].visible=visible;
+	cueues[cidx].paused=paused;
 }
 void queueAniActive(uint8_t cueue_type,int item,int active)
 {
@@ -577,9 +578,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 #ifdef KORG_CTRL
 		while(keyboard_poll(&midi_korg,&e)) 
 		{
+			printf("%d %d %d\n", e.x, e.y, e.type);
 			if((e.type == 176)&&(e.x>=16)&&(e.x<24))
 			{
-				poti[e.x-16] = e.y;
+				//poti[16-e.x] = e.y;
+			}
+			if((e.type == 176)&&(e.x<8))
+			{
+				poti[e.x] = e.y;
 			}
 		}
 #endif
@@ -846,13 +852,24 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		}
 		usleep(10);
 
+
+		for(int i = 1;i<9;i++)
+		{
+//			ch[i]=poti[i-1]*2;
+		}
+
+//			ch[29]=poti[0]*2;
+//		ch[30]=poti[1]*2;
+//			ch[4]=poti[2]*2;
+//		ch[5]=poti[3]*2;
+
 		ret = ftdi_write_data(ftdi, ch, 65);
 		if (ret < 0)
 		{
 			fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
 		}
 #endif
-		usleep(2000);
+		usleep(3000);
 
 
 
