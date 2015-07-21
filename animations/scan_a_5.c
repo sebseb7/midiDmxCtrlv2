@@ -7,8 +7,8 @@
 
 static uint16_t a;
 
-static uint8_t x;
-static uint8_t y;
+static int32_t x;
+static int32_t y;
 
 static int32_t c_r;
 
@@ -39,6 +39,12 @@ static uint8_t tick(void)
 	if(c_r == 1) y+=10;
 	if(c_r == 2) x-=10;
 	if(c_r == 3) y-=10;
+
+	if(x < 0){ x=x*-1;c_r+=2;};
+	if(y < 0){ y=y*-1;c_r+=2;};
+	if(x > 255){ x=255-(x-255);c_r+=2;};
+	if(y > 255){ y=255-(y-255);c_r+=2;};
+	if(c_r > 3){c_r = c_r-4;};
 
 	setCh(4,x);
 	setCh(5,y);
