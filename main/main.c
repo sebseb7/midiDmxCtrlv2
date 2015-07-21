@@ -231,7 +231,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 #ifdef SDL_OUTPUT
 	SDL_Surface* screen;
-	screen = SDL_SetVideoMode(100,100,32, SDL_SWSURFACE | SDL_DOUBLEBUF);
+	screen = SDL_SetVideoMode(500,500,32, SDL_SWSURFACE | SDL_DOUBLEBUF);
 #endif
 
 
@@ -824,6 +824,19 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				screen, 
 				&rect4, 
 				SDL_MapRGB(screen->format,ch[34],ch[35],ch[36])
+			);
+
+			SDL_Rect rect5 = { 100, 100, 300, 300 };
+			SDL_FillRect(
+				screen, 
+				&rect5, 
+				SDL_MapRGB(screen->format,0,0,0)
+			);
+			SDL_Rect rect6 = { 100+ch[4], 100+ch[5], 10, 10 };
+			SDL_FillRect(
+				screen, 
+				&rect6, 
+				SDL_MapRGB(screen->format,255,255,255)
 			);
 			SDL_Flip(screen);
 #endif

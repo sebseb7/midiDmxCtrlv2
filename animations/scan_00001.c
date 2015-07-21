@@ -1,8 +1,9 @@
 #include "main.h"
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
 #include "dmx_devices.h"
+#include "sini.h"
 
 
 uint16_t a;
@@ -27,9 +28,9 @@ static uint8_t tick(void)
 
 static void init(void)
 {
-	col=random(255);
-	rot=random(255);
-	gobo=random(255);
+	col=rand()&255;
+	rot=rand()&255;
+	gobo=rand()&255;
 	a=0;
 	setCh(25,0);
 	setCh(26,0);

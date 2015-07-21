@@ -1,6 +1,6 @@
 #include "main.h"
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
 #include "dmx_devices.h"
 
@@ -10,8 +10,8 @@ static uint16_t a;
 static uint8_t tick(void) 
 {
 	a++;
-	setCh(4,random(255));
-	setCh(5,random(255));
+	setCh(4,rand()%255);
+	setCh(5,rand()%255);
 	return 1;
 }
 

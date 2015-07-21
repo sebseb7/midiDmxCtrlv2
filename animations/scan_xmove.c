@@ -1,8 +1,11 @@
 #include "main.h"
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
 #include "dmx_devices.h"
+#include "sini.h"
+
+
 
 uint16_t a;
 
@@ -32,20 +35,11 @@ static uint8_t tick_2(void)
 
 static uint8_t tick_3(void) 
 {
-	setCh(29,random(255));
-	setCh(30,random(255));
+	setCh(29,rand()%255);
+	setCh(30,rand()%255);
 	return 1;
 }
 
-static uint8_t tick_4(void) 
-{
-	return 1;
-}
-
-static uint8_t tick_5(void) 
-{
-	return 1;
-}
 
 static void init(void)
 {
@@ -65,8 +59,6 @@ void constructor(void) {
 	registerAnimation(init,tick_1,deinit, SCAN_MOVE,TYPE_NORMAL,10, 3);
 	registerAnimation(init,tick_2,deinit, SCAN_MOVE,TYPE_NORMAL,10, 3);
 	registerAnimation(init,tick_3,deinit, SCAN_MOVE,TYPE_NORMAL,10, 3);
-//	registerAnimation(init,tick_4,deinit, SCAN_MOVE,TYPE_NORMAL,10, 3);
-//	registerAnimation(init,tick_5,deinit, SCAN_MOVE,TYPE_NORMAL,10, 3);
 	queueInitialization(SCAN_MOVE,0,1,1);
 }
 

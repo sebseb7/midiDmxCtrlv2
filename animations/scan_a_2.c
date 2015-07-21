@@ -1,17 +1,16 @@
 #include "main.h"
 #include <stdio.h>
-#include <math.h>
 
 #include "dmx_devices.h"
-
+#include "sini.h"
 
 static uint16_t a;
 
 static uint8_t tick(void) 
 {
 	a+=200;
-	setCh(4,64+(sini(a)>>11));
-	setCh(5,64+(sini(a+4192)>>110));
+	setCh(4,64+(sini(a)>>10));
+	setCh(5,64+(sini(a+4192)>>10));
 	return 1;
 }
 

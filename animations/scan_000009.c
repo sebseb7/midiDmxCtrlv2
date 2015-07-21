@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "dmx_devices.h"
+#include "sini.h"
 
 
 uint16_t a;

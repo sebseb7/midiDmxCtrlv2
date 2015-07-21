@@ -11,11 +11,6 @@ static uint8_t tick_0(void)
 	return 1;
 }
 
-static uint8_t tick_1(void) 
-{
-	setCh(27,40);
-	return 1;
-}
 
 static uint8_t tick_2(void) 
 {
