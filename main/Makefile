@@ -6,7 +6,7 @@ SDL_OUTPUT = true
 
 
 FLAGS= -I. -I../firmware --std=gnu99 -Wall  -funsigned-char -Wundef -Wsign-compare  -Wstrict-prototypes  -Wextra -L. 
-LDFLAGS= -lportmidi -lftdi1 
+LDFLAGS= -lportmidi -lftdi1 -lm
 
 SOURCES=$(wildcard ../animations/*.c)
 

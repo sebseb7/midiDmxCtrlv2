@@ -244,7 +244,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	}
 
 #ifdef LIBFTDI
-
 	int ret;
 	struct ftdi_context *ftdi;
 	if ((ftdi = ftdi_new()) == 0)

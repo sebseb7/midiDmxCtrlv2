@@ -9,7 +9,7 @@
 #define LAUNCHPAD
 
 
-//#define LIBFTDI
+#define LIBFTDI
 
 enum {
 	QUADPHASE = 0,
