@@ -97,6 +97,10 @@ uint8_t getIn(uint8_t chan)
 {
 	return in[chan];
 }
+uint8_t getFader(uint8_t chan)
+{
+	return poti[chan]*2;
+}
 
 
 static int cueues_initialized = 0;
@@ -884,8 +888,13 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 //			ch[29]=poti[0]*2;
 //		ch[30]=poti[1]*2;
-//			ch[4]=poti[2]*2;
-//		ch[5]=poti[3]*2;
+//		ch[1]=poti[1]*2;
+//		ch[2]=poti[2]*2;
+//		ch[3]=poti[3]*2;
+//		ch[6]=poti[4]*2;
+//		ch[7]=poti[5]*2;
+
+//		printf("%i %i\n",ch[1],ch[2]);
 
 		ret = ftdi_write_data(ftdi, ch, 65);
 		if (ret < 0)

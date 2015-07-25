@@ -9,18 +9,20 @@ static uint16_t a;
 static uint8_t tick(void) 
 {
 	a+=200;
-	setCh(4,64+(sini(a)>>10));
-	setCh(5,64+(sini(a+4192)>>10));
+
+//	float b = getFader(0)/256.0f;
+//	float c = getFader(1)/256.0f;
+	float b = 0.273f;
+	float c = 0.263f;
+
+	setCh(4,96+(sini(a)/(3000.0f*b)));
+	setCh(5,96+(sini(a+4192)/(3000.0f*c)));
 	return 1;
 }
 
 static void init(void)
 {
 	a=0;
-	setCh(1,0);
-	setCh(2,0);
-	setCh(3,255);
-	setCh(6,255);
 
 
 }

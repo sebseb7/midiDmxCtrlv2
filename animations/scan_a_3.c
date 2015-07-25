@@ -27,10 +27,6 @@ static void init(void)
 	col=rand()%255;
 	rot=rand()%255;
 	gobo=rand()%255;
-	setCh(1,0);
-	setCh(2,0);
-	setCh(3,155);
-	setCh(6,255);
 
 
 }

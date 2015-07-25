@@ -18,10 +18,6 @@ static uint8_t tick(void)
 static void init(void)
 {
 	a=0;
-	setCh(1,0);
-	setCh(2,0);
-	setCh(3,155);
-	setCh(6,255);
 
 
 }

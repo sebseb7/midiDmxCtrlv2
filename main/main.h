@@ -14,6 +14,9 @@
 enum {
 	QUADPHASE = 0,
 	SCAN_2,
+	SCAN_2_COL,
+	SCAN_2_GOBO,
+	SCAN_2_STROBE,
 	SCAN_COL,
 	SCAN_GOBO,
 	SCAN_GOBO_R,
@@ -48,6 +51,7 @@ void queueAniActive(uint8_t cueue_type,int item,int active);
 void setLedX(uint8_t x, uint8_t r,uint8_t g,uint8_t b);
 void setCh(uint8_t chan, uint8_t value);
 uint8_t getIn(uint8_t chan);
+uint8_t getFader(uint8_t chan);
 void invLedX(uint8_t x);
 void Delay(uint16_t t);
 void getLedX(uint8_t x, uint8_t* red, uint8_t* green, uint8_t* blue);
