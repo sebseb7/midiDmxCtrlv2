@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "dmx_devices.h"
+#include "scan_limits.h"
 
 
 static uint16_t a;
@@ -10,8 +11,12 @@ static uint16_t a;
 static uint8_t tick(void) 
 {
 	a++;
-	setCh(4,rand()%255);
-	setCh(5,rand()%255);
+	
+	
+	//setCh(4,50+rand()%125);
+	//setCh(5,100+rand()%70);
+	setCh(4,0+rand()%255);
+	setCh(5,SCAN_MIN_X+rand()%(255-(SCAN_MAX_X-SCAN_MIN_X)));
 	return 1;
 }
 

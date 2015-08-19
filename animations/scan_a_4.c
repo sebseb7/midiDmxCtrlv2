@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "dmx_devices.h"
+#include "scan_limits.h"
 
 
 static uint16_t a;
@@ -44,7 +45,8 @@ static uint8_t tick(void)
 
 		//	printf("%i %i %i\n",new_angle,new_x,new_y);
 		}
-		while((new_x<0)||(new_y<0)||(new_x > 255)||(new_y>255));
+		while((new_x<0)||(new_y<SCAN_MIN_X)||(new_x > 255)||(new_y>SCAN_MAX_X));
+		//while((new_x<50)||(new_y<90)||(new_x > 175)||(new_y>180));
 		angle = new_angle;
 
 	}

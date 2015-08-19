@@ -101,7 +101,7 @@ static void deinit(void)
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
 	registerAnimation(init,tick_0,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
-	registerAnimation(init,tick_1,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
+/*	registerAnimation(init,tick_1,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 	registerAnimation(init,tick_2,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 	registerAnimation(init,tick_3,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 	registerAnimation(init,tick_4,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
@@ -115,7 +115,7 @@ void constructor(void) {
 	registerAnimation(init,tick_12,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 //	registerAnimation(init,tick_13,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 	registerAnimation(init,tick_14,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
-	queueInitialization(SCAN_2_GOBO,1,1,1);
+*/	queueInitialization(SCAN_2_GOBO,1,1,0);
 }
 
 
