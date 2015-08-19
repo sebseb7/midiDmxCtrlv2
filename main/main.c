@@ -228,9 +228,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	osc_connect("192.168.0.112");
+	//osc_connect("169.254.112.29");
 
-//	osc_send_f("/1/push1",1.0f);
-//	osc_send_s("/1/label3","test");
 	osc_start_server();
 
 #ifdef LAUNCHPAD
@@ -355,23 +354,24 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	while(poll_osc_event(&oscev))
 	{
 		printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
-		if(oscev.type == 1)
+		int qidx = oscev.a-1;
+		if(qidx < cueuecount)
 		{
-			if(oscev.a == 1)
+			if(oscev.type == 1)
 			{
-				if(oscev.b-1 < cueues[0].length)
+				if(oscev.b-1 < cueues[qidx].length)
 				{
 					update_ui=1;
 
-					if(cueues[0].paused==1)
+					if(cueues[qidx].paused==1)
 					{
 
 
 						int new_idx =  oscev.b-1;
-						
+
 						// why this loop (relict from linked-list times?)
 						int error = 0;
-						while(new_idx != cueues[0].active_item)
+						while(new_idx != cueues[qidx].active_item)
 						{
 							error++;
 							if(error > 20)
@@ -381,75 +381,69 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 							}
 							update_ui=1;
 
-							cueues[0].list[cueues[0].active_item].deinit_fp();
+							cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
 
-							cueues[0].active_item++;
-							if(cueues[0].length == cueues[0].active_item)
-								cueues[0].active_item=0;
+							cueues[qidx].active_item++;
+							if(cueues[qidx].length == cueues[qidx].active_item)
+								cueues[qidx].active_item=0;
 
-							cueues[0].tick=0;
-							cueues[0].list[cueues[0].active_item].init_fp();
+							cueues[qidx].tick=0;
+							cueues[qidx].list[cueues[qidx].active_item].init_fp();
 						}	
 					}
 					else
 					{
-						if(cueues[0].list[oscev.b-1].active==0)
+						if(cueues[qidx].list[oscev.b-1].active==0)
 						{
-							cueues[0].list[oscev.b-1].active=1;
-							cueues[0].active_elements++;
+							cueues[qidx].list[oscev.b-1].active=1;
+							cueues[qidx].active_elements++;
 						}
 						else
 						{
-							if(cueues[0].active_elements > 1)
+							if(cueues[qidx].active_elements > 1)
 							{
-								cueues[0].list[oscev.b-1].active=0;
-								cueues[0].active_elements--;
+								cueues[qidx].list[oscev.b-1].active=0;
+								cueues[qidx].active_elements--;
 							}
 						}
 					}
 				}
 			}
-		}
-		else if(oscev.type == 2)
-		{
-			if(oscev.a == 1)
+			else if(oscev.type == 2)
 			{
 				update_ui=1;
-				if(cueues[0].active==1)
+				if(cueues[qidx].active==1)
 				{
-					cueues[0].active=0;
+					cueues[qidx].active=0;
 				}
 				else
 				{
-					cueues[0].active=1;
+					cueues[qidx].active=1;
 				}
 			}
-		}
-		else if(oscev.type == 3)
-		{
-			if(oscev.a == 1)
+			else if(oscev.type == 3)
 			{
 				update_ui=1;
 				if(oscev.b == 1)
 				{
-					if(cueues[0].paused==1)
+					if(cueues[qidx].paused==1)
 					{
-						cueues[0].paused=0;
+						cueues[qidx].paused=0;
 					}
 					else
 					{
-						cueues[0].paused=1;
+						cueues[qidx].paused=1;
 					}
 				}
 				else if(oscev.b ==2)
 				{
-					if(cueues[0].random==1)
+					if(cueues[qidx].random==1)
 					{
-						cueues[0].random=0;
+						cueues[qidx].random=0;
 					}
 					else
 					{
-						cueues[0].random=1;
+						cueues[qidx].random=1;
 					}
 				}
 				else if(oscev.b ==3)
@@ -460,7 +454,6 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				}
 
 			}
-
 		}
 	}
 
@@ -731,12 +724,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		update_ui=0;
 
 
-		uint16_t osc_display_offset = 0;
-		for(uint16_t i = 0;i < 1;i++)
+		//uint16_t osc_display_offset = 0;
+		for(uint16_t i = 0;i < 5;i++)
 		{
-			uint16_t j = i+osc_display_offset;
-
-			printf("update queue %i\n",j);
+			//uint16_t j = i+osc_display_offset;
 
 			osc_update_queue_label(i,cueues[i].name);
 			if(cueues[i].active == 1)
