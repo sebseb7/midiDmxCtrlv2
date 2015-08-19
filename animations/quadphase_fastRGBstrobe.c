@@ -81,8 +81,8 @@ static void deinit(void)
 
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
-	registerAnimation(init,tick,deinit, QUADPHASE, TYPE_NORMAL,80,10);
-	queueInitialization(QUADPHASE,1,1,0);
+	registerAnimation(init,tick,deinit, QUADPHASE, TYPE_NORMAL,80,2,"RGBStrobe");
+	queueInitialization(QUADPHASE,1,0,0,"Quadphase");
 }
 
 

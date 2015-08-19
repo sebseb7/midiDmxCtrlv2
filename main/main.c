@@ -61,6 +61,7 @@ struct animation {
 	uint16_t active;
 	uint32_t duration;
 	uint32_t timing;
+	char * name;
 };
 
 
@@ -81,6 +82,7 @@ struct cueue {
 	uint8_t active_elements;
 	uint32_t tick;
 	uint32_t last_frame;
+	char * name;
 } cueues[MAX_CUEUES];
 
 uint16_t cueueidx[MAX_CUEUES];
@@ -108,7 +110,7 @@ uint8_t getFader(uint8_t chan)
 
 static int cueues_initialized = 0;
 
-int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint32_t d, const uint32_t t)
+int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint32_t d, const uint32_t t, char * name)
 {
 	if(cueues_initialized == 0)
 	{
@@ -155,6 +157,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].list[cueues[cidx].length].duration = d;
 		cueues[cidx].list[cueues[cidx].length].timing = t;
 		cueues[cidx].list[cueues[cidx].length].active = 1;
+		cueues[cidx].list[cueues[cidx].length].name = name;
 		cueues[cidx].length++;
 		cueues[cidx].active_elements++;
 	}
@@ -176,12 +179,13 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 
 }
 
-void queueInitialization(uint8_t cueue_type,int active,int visible,int paused)
+void queueInitialization(uint8_t cueue_type,int active,int visible,int paused, char * name)
 {
 	int cidx = cueueidx[cueue_type]-1;
 	cueues[cidx].active=active;
 	cueues[cidx].visible=visible;
 	cueues[cidx].paused=paused;
+	cueues[cidx].name=name;
 }
 void queueAniActive(uint8_t cueue_type,int item,int active)
 {
@@ -207,15 +211,15 @@ void queueAniActive(uint8_t cueue_type,int item,int active)
 	}
 }
 
-void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count)
+void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count,char * name)
 {
 	if(cueue_type == TYPE_NORMAL)
 	{
-		addToCueue(cueue,cueue_type,init,tick,deinit,count*t,1000000/t);
+		addToCueue(cueue,cueue_type,init,tick,deinit,count*t,1000000/t,name);
 	}
 	else
 	{
-		addToCueue(cueue,cueue_type,init,tick,deinit,0,0);
+		addToCueue(cueue,cueue_type,init,tick,deinit,0,0,name);
 	}
 }
 
@@ -620,16 +624,55 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 				printf("update queue %i\n",j);
 
-				osc_update_queue_label(i,"XXXXX");
-
-				for(uint16_t x = 0; x < 16;x++)
+				osc_update_queue_label(i,cueues[i].name);
+				if(cueues[i].active == 1)
 				{
-					osc_update_queue_entry_label(i,x,"yyyy");
+					osc_update_queue_active(i,1);
+				}
+				else
+				{
+					osc_update_queue_active(i,0);
+				}
+
+				for(int x =0;x<16;x++)
+				{
+					if(x < cueues[i].length)
+					{
+						osc_update_queue_entry_label(i,x,cueues[i].list[x].name);
+						osc_update_queue_entry_led(i,x,1,1);
+						osc_update_queue_entry_led(i,x,2,0);
+						if(cueues[i].active_item == x)
+						{
+							osc_update_queue_entry_led(i,x,3,1);
+						}
+						else
+						{
+							osc_update_queue_entry_led(i,x,3,0);
+						}
+						if(cueues[i].list[x].active==1)
+						{
+							osc_update_queue_entry_button(i,x,1);
+						}
+						else
+						{
+							osc_update_queue_entry_button(i,x,0);
+						}
+					}
+					else
+					{
+						osc_update_queue_entry_label(i,x,"");
+						osc_update_queue_entry_led(i,x,1,0);
+						osc_update_queue_entry_led(i,x,2,0);
+						osc_update_queue_entry_led(i,x,3,0);
+						osc_update_queue_entry_button(i,x,0);
+					}
+					
 				}
 
 
 
 			}
+			osc_send_flush();
 			printf("\n");
 
 

@@ -36,7 +36,7 @@ static void deinit(void)
 
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
-	registerAnimation(init,tick,deinit, SCAN_2,TYPE_NORMAL,4, 11);
+	registerAnimation(init,tick,deinit, SCAN_2,TYPE_NORMAL,4, 2,"randSlow");
 }
 
 
