@@ -84,7 +84,7 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 
 
 
-	const char delimiters[] = "/";
+	const char delimiters[] = "/_";
 	char *running;
 	char *copy;
 	char *token;
@@ -99,21 +99,47 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 	int osc_a;
 	int osc_b;
 	float osc_value;
-
+	
 	if(strcmp("1",token)==0)
 	{
 		token = strsep (&running, delimiters);
-		if(strcmp("multipush1",token)==0)
+		if(strcmp("q",token)==0)
 		{
 			token = strsep (&running, delimiters);
 			osc_a = atoi(token);
 			token = strsep (&running, delimiters);
-			osc_b = atoi(token);
-			osc_value = argv[0]->f;
-			osc_type = 1;
+		
+			if(strcmp("toggle",token)==0)
+			{
+				osc_type = 1;
+				token = strsep (&running, delimiters);
+				if(strcmp("1",token)==0)
+				{
+					token = strsep (&running, delimiters);
+					osc_b = atoi(token);
+					osc_value = argv[0]->f;
+				}
+			}
+			if(strcmp("ctrl",token)==0)
+			{
+				osc_type = 3;
+				token = strsep (&running, delimiters);
+				if(strcmp("1",token)==0)
+				{
+					token = strsep (&running, delimiters);
+					osc_b = atoi(token);
+					osc_value = argv[0]->f;
+				}
+			}
+			else if(strcmp("en",token)==0)
+			{
+				osc_type = 2;
+				osc_value = argv[0]->f;
+			}
 		}
 	}
 	free(copy);
+
 
 
 	printf("path: <%s>\n", path);
@@ -143,9 +169,17 @@ int generic_handler(const char *path, const char *types, lo_arg ** argv,
 
 	return 1;
 }
-//if (rxhead0==rxtail0) return 0;
-//*c = *rxtail0;
-//if (++rxtail0 == (rxbuf0 + UART_RXBUFSIZE)) rxtail0 = rxbuf0;
+
+int poll_osc_event(struct osc_event* event_ref)
+{
+	if (evhead==evtail) return 0;
+	event_ref->type =  evtail->type;
+	event_ref->a =  evtail->a;
+	event_ref->b =  evtail->b;
+	event_ref->value =  evtail->value;
+	if (++evtail == (eventsbuf + EV_SIZE)) evtail = eventsbuf;
+	return 1;
+}
 
 void osc_start_server(void)
 {
@@ -154,17 +188,6 @@ void osc_start_server(void)
 	lo_server_thread st = lo_server_thread_new("8000", error);
 	lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
 	lo_server_thread_start(st);
-}
-
-void osc_setMatrix(int x, int y, __attribute__((unused)) int r, __attribute__((unused)) int g, __attribute__((unused)) int flash)
-{
-	char path[200];
-
-	sprintf(path, "/1/multipush1/%i/%i",x+1,y+1);
-
-	printf("send %s\n",path);
-
-	osc_send_f(path,1.0f);
 }
 
 void osc_update_queue_label(uint16_t idx,const char * value)
@@ -195,8 +218,12 @@ void osc_update_queue_entry_button(uint16_t idx,uint16_t entry_idx,uint16_t valu
 {
 	char path[200];
 	sprintf(path, "/1/q_%i_toggle/1/%i",idx+1,entry_idx+1);
-	
-//	printf("%s\n",path);
+	osc_send_f(path,value);
+}
+void osc_update_queue_ctrl(uint16_t idx,uint16_t ctrl_idx,uint16_t value)
+{
+	char path[200];
+	sprintf(path, "/1/q_%i_ctrl/1/%i",idx+1,ctrl_idx);
 	osc_send_f(path,value);
 }
 
