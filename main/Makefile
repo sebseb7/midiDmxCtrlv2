@@ -3,6 +3,7 @@ UNAME := $(shell uname)
 COMPILER = gcc
 
 SDL_OUTPUT = true
+OSC_OUTPUT = true
 
 
 FLAGS= -I. -I../firmware --std=gnu99 -Wall  -funsigned-char -Wundef -Wsign-compare  -Wstrict-prototypes  -Wextra -L. 
@@ -19,6 +20,11 @@ ifeq ($(SDL_OUTPUT), true)
 	LDFLAGS += `sdl-config --libs`
 endif
 
+ifeq ($(SDL_OUTPUT), true)
+
+	LDFLAGS += -llo
+endif
+
 all: dmxMidiCtrl
 
 clean:
@@ -28,9 +34,9 @@ kext:
 	sudo kextunload -b com.apple.driver.AppleUSBFTDI
 	sudo kextunload -b com.FTDI.driver.FTDIUSBSerialDriver
 
-dmxMidiCtrl: $(SOURCES) $(LIB_SOURCES) $(LIB_HEADERS) main.c main.h launchpad.c launchpad.h Makefile 
+dmxMidiCtrl: $(SOURCES) $(LIB_SOURCES) $(LIB_HEADERS) osc.c osc.h main.c main.h launchpad.c launchpad.h Makefile 
 	@echo "  \033[1;34mCompile\033[0m"
-	@$(COMPILER) main.c launchpad.c -o dmxMidiCtrl -I. -I../libs $(FLAGS) $(LIB_SOURCES) $(SOURCES) $(LDFLAGS) 
+	@$(COMPILER) main.c launchpad.c osc.c -o dmxMidiCtrl -I. -I../libs $(FLAGS) $(LIB_SOURCES) $(SOURCES) $(LDFLAGS) 
 
 .PHONY : clean all kext
 

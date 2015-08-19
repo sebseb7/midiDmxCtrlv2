@@ -17,6 +17,9 @@
 #include "keyboard.h"
 #include "launchpad.h"
 
+
+#include "osc.h"
+
 #ifdef SDL_OUTPUT
 #include <SDL/SDL.h>
 #endif
@@ -218,6 +221,13 @@ void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun
 
 
 int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unused__))) {
+
+
+	osc_connect("192.168.0.112");
+
+//	osc_send_f("/1/push1",1.0f);
+//	osc_send_s("/1/label3","test");
+	osc_start_server();
 
 #ifdef LAUNCHPAD
 	launchpad_init();
@@ -601,6 +611,30 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		if(update_ui)
 		{
 			update_ui=0;
+
+
+			uint16_t osc_display_offset = 0;
+			for(uint16_t i = 0;i < 1;i++)
+			{
+				uint16_t j = i+osc_display_offset;
+
+				printf("update queue %i\n",j);
+
+				osc_update_queue_label(i,"XXXXX");
+
+				for(uint16_t x = 0; x < 16;x++)
+				{
+					osc_update_queue_entry_label(i,x,"yyyy");
+				}
+
+
+
+			}
+			printf("\n");
+
+
+
+			
 #ifdef LAUNCHPAD
 
 			if(queue_setup == 0)
