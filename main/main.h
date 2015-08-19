@@ -44,8 +44,8 @@ typedef void (*deinit_fun)(void);
 typedef uint8_t (*tick_fun)(void);
 
 
-void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t cueue, uint8_t cueue_type, uint16_t t, float duration);
-void queueInitialization(uint8_t cueue_type,int active,int visible,int paused);
+void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t cueue, uint8_t cueue_type, uint16_t t, float duration,char * name);
+void queueInitialization(uint8_t cueue_type,int active,int visible,int paused,char * name);
 void queueAniActive(uint8_t cueue_type,int item,int active);
 
 void setLedX(uint8_t x, uint8_t r,uint8_t g,uint8_t b);

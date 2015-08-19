@@ -61,6 +61,7 @@ struct animation {
 	uint16_t active;
 	uint32_t duration;
 	uint32_t timing;
+	char * name;
 };
 
 
@@ -81,6 +82,7 @@ struct cueue {
 	uint8_t active_elements;
 	uint32_t tick;
 	uint32_t last_frame;
+	char * name;
 } cueues[MAX_CUEUES];
 
 uint16_t cueueidx[MAX_CUEUES];
@@ -108,7 +110,7 @@ uint8_t getFader(uint8_t chan)
 
 static int cueues_initialized = 0;
 
-int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint32_t d, const uint32_t t)
+int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint32_t d, const uint32_t t, char * name)
 {
 	if(cueues_initialized == 0)
 	{
@@ -155,6 +157,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].list[cueues[cidx].length].duration = d;
 		cueues[cidx].list[cueues[cidx].length].timing = t;
 		cueues[cidx].list[cueues[cidx].length].active = 1;
+		cueues[cidx].list[cueues[cidx].length].name = name;
 		cueues[cidx].length++;
 		cueues[cidx].active_elements++;
 	}
@@ -176,12 +179,13 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 
 }
 
-void queueInitialization(uint8_t cueue_type,int active,int visible,int paused)
+void queueInitialization(uint8_t cueue_type,int active,int visible,int paused, char * name)
 {
 	int cidx = cueueidx[cueue_type]-1;
 	cueues[cidx].active=active;
 	cueues[cidx].visible=visible;
 	cueues[cidx].paused=paused;
+	cueues[cidx].name=name;
 }
 void queueAniActive(uint8_t cueue_type,int item,int active)
 {
@@ -207,15 +211,15 @@ void queueAniActive(uint8_t cueue_type,int item,int active)
 	}
 }
 
-void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count)
+void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count,char * name)
 {
 	if(cueue_type == TYPE_NORMAL)
 	{
-		addToCueue(cueue,cueue_type,init,tick,deinit,count*t,1000000/t);
+		addToCueue(cueue,cueue_type,init,tick,deinit,count*t,1000000/t,name);
 	}
 	else
 	{
-		addToCueue(cueue,cueue_type,init,tick,deinit,0,0);
+		addToCueue(cueue,cueue_type,init,tick,deinit,0,0,name);
 	}
 }
 
@@ -346,632 +350,794 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 #endif
 
 
+	struct osc_event oscev;
 
-#ifdef LAUNCHPAD
-		while(launchpad_poll(&e)) 
+	while(poll_osc_event(&oscev))
+	{
+		printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
+		if(oscev.type == 1)
 		{
-			if(display_mode == 0)
+			if(oscev.a == 1)
 			{
-				int cidx=0;
-				for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
-				{
-					if(cueues[cidx_l].visible)
-					{
-						if((e.type == 144)&&(e.x==lpmap[cidx*8])&&(e.y==127))
-						{
-							update_ui=1;
-							if(cueues[cidx_l].active==1)
-							{
-								cueues[cidx_l].active=0;
-							}
-							else
-							{
-								cueues[cidx_l].active=1;
-							}
-						}
-						if((e.type == 144)&&(e.x==lpmap[cidx*8+1])&&(e.y==127))
-						{
-							update_ui=1;
-							if(queue_setup==cidx_l+1)
-							{
-								queue_setup=0;
-							}
-							else
-							{
-								queue_setup=cidx_l+1;
-							}
-						}
-
-
-						if((cueues[cidx_l].active == 1)&&(cueues[cidx_l].in_test==0)&&(cueues[cidx_l].in_off==0))
-						{
-
-
-							int new_idx =  cueues[cidx_l].active_item;
-
-							if(queue_setup != cidx_l+1)
-							{
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
-								{
-									int new_idx_tmp = e.x-(2+(cidx*16));
-									if(new_idx_tmp < cueues[cidx_l].length)
-									{
-										new_idx = new_idx_tmp;
-									}
-								}
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
-								{
-									printf("ssdsdsd: %i\n",e.x);
-									int new_idx_tmp = e.x-(10+(cidx*16));
-									if(new_idx_tmp < cueues[cidx_l].length)
-									{
-										new_idx = new_idx_tmp;
-									}
-								}
-							}
-							else
-							{
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
-								{
-									int new_idx_tmp = e.x-(2+(cidx*16));
-									if(new_idx_tmp < cueues[cidx_l].length)
-									{
-										update_ui=1;
-										if(cueues[cidx_l].list[new_idx_tmp].active==0)
-										{
-											cueues[cidx_l].list[new_idx_tmp].active=1;
-											cueues[cidx_l].active_elements++;
-										}
-										else
-										{
-											if(cueues[cidx_l].active_elements > 1)
-											{
-												cueues[cidx_l].list[new_idx_tmp].active=0;
-												cueues[cidx_l].active_elements--;
-											}
-										}
-									}
-								}
-								if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
-								{
-									int new_idx_tmp = e.x-(10+(cidx*16));
-									if(new_idx_tmp < cueues[cidx_l].length)
-									{
-										update_ui=1;
-										if(cueues[cidx_l].list[new_idx_tmp].active==0)
-										{
-											cueues[cidx_l].list[new_idx_tmp].active=1;
-											cueues[cidx_l].active_elements++;
-										}
-										else
-										{
-											if(cueues[cidx_l].active_elements > 1)
-											{
-												cueues[cidx_l].list[new_idx_tmp].active=0;
-												cueues[cidx_l].active_elements--;
-											}
-										}
-									}
-								}
-							}
-
-							int error = 0;
-							while(new_idx != cueues[cidx_l].active_item)
-							{
-								error++;
-								if(error > 20)
-								{
-									printf("error1 %i %i %i\n",new_idx,cidx_l,cueues[cidx_l].active);
-									exit(0);
-								}
-								update_ui=1;
-
-								cueues[cidx_l].list[cueues[cidx_l].active_item].deinit_fp();
-
-								cueues[cidx_l].active_item++;
-								if(cueues[cidx_l].length == cueues[cidx_l].active_item)
-									cueues[cidx_l].active_item=0;
-
-								cueues[cidx_l].tick=0;
-								cueues[cidx_l].list[cueues[cidx_l].active_item].init_fp();
-							}	
-						}
-						cidx++;
-						if(cueues[cidx_l].length>6)
-							cidx++;
-					}
-				}
-			}
-			else if(display_mode == 1)
-			{
-				if((e.type == 144)&&(e.y == 127)&&((e.x%16) < 8))
-				{
-					int key = ((e.x-(e.x%8))/2)+e.x%8;
-
-					if(key < cueuecount)
-					{
-						if(cueues[key].visible==0)
-						{
-							cueues[key].visible=1;
-							update_ui=1;
-						}
-						else
-						{
-							cueues[key].visible=0;
-							update_ui=1;
-						}
-					}
-
-
-				}
-			}
-
-			if(queue_setup != 0)
-			{
-				if((e.type == 176)&&(e.x==104)&&(e.y==127))
+				if(oscev.b-1 < cueues[0].length)
 				{
 					update_ui=1;
-					if(cueues[queue_setup-1].paused==1)
+
+					if(cueues[0].paused==1)
 					{
-						cueues[queue_setup-1].paused=0;
+
+
+						int new_idx =  oscev.b-1;
+						
+						// why this loop (relict from linked-list times?)
+						int error = 0;
+						while(new_idx != cueues[0].active_item)
+						{
+							error++;
+							if(error > 20)
+							{
+								printf("error1a\n");
+								exit(0);
+							}
+							update_ui=1;
+
+							cueues[0].list[cueues[0].active_item].deinit_fp();
+
+							cueues[0].active_item++;
+							if(cueues[0].length == cueues[0].active_item)
+								cueues[0].active_item=0;
+
+							cueues[0].tick=0;
+							cueues[0].list[cueues[0].active_item].init_fp();
+						}	
 					}
 					else
 					{
-						cueues[queue_setup-1].paused=1;
-					}
-				}
-				if((e.type == 176)&&(e.x==105)&&(e.y==127))
-				{
-					update_ui=1;
-					if(cueues[queue_setup-1].random==1)
-					{
-						cueues[queue_setup-1].random=0;
-					}
-					else
-					{
-						cueues[queue_setup-1].random=1;
-					}
-				}
-				if((e.type == 176)&&(e.x==106)&&(e.y==127))
-				{
-					if(cueues[queue_setup-1].off_available == 1)
-					{
-						update_ui=1;
-						if(cueues[queue_setup-1].in_off==1)
+						if(cueues[0].list[oscev.b-1].active==0)
 						{
-							cueues[queue_setup-1].in_off=0;
+							cueues[0].list[oscev.b-1].active=1;
+							cueues[0].active_elements++;
 						}
 						else
 						{
-							cueues[queue_setup-1].in_off=1;
-							cueues[queue_setup-1].in_test=0;
+							if(cueues[0].active_elements > 1)
+							{
+								cueues[0].list[oscev.b-1].active=0;
+								cueues[0].active_elements--;
+							}
 						}
 					}
 				}
-				if((e.type == 176)&&(e.x==107)&&(e.y==127))
-				{
-					if(cueues[queue_setup-1].test_available == 1)
-					{
-						update_ui=1;
-						if(cueues[queue_setup-1].in_test==1)
-						{
-							cueues[queue_setup-1].in_test=0;
-						}
-						else
-						{
-							cueues[queue_setup-1].in_test=1;
-							cueues[queue_setup-1].in_off=0;
-						}
-					}
-				}
-
-
-
-
-
 			}
-
-
-			if((e.type == 144)&&(e.x==88)&&(e.y==127))
+		}
+		else if(oscev.type == 2)
+		{
+			if(oscev.a == 1)
 			{
 				update_ui=1;
-				if(display_mode != 1)
+				if(cueues[0].active==1)
 				{
-					queue_setup=0;
-					display_mode = 1;
-					launchpad_setSide(5,2,2,1);
+					cueues[0].active=0;
 				}
 				else
 				{
-					display_mode = 0;
-					launchpad_setSide(5,2,2,0);
+					cueues[0].active=1;
 				}
 			}
-
-			printf("%d %d %d\n", e.x, e.y, e.type);
 		}
-
-#endif
-#ifdef KORG_CTRL
-		while(keyboard_poll(&midi_korg,&e)) 
+		else if(oscev.type == 3)
 		{
-			printf("%d %d %d\n", e.x, e.y, e.type);
-			if((e.type == 176)&&(e.x>=16)&&(e.x<24))
+			if(oscev.a == 1)
 			{
-				//poti[16-e.x] = e.y;
-			}
-			if((e.type == 176)&&(e.x<8))
-			{
-				poti[e.x] = e.y;
-			}
-		}
-#endif
-
-
-		if(update_ui)
-		{
-			update_ui=0;
-
-
-			uint16_t osc_display_offset = 0;
-			for(uint16_t i = 0;i < 1;i++)
-			{
-				uint16_t j = i+osc_display_offset;
-
-				printf("update queue %i\n",j);
-
-				osc_update_queue_label(i,"XXXXX");
-
-				for(uint16_t x = 0; x < 16;x++)
+				update_ui=1;
+				if(oscev.b == 1)
 				{
-					osc_update_queue_entry_label(i,x,"yyyy");
-				}
-
-
-
-			}
-			printf("\n");
-
-
-
-			
-#ifdef LAUNCHPAD
-
-			if(queue_setup == 0)
-			{
-				for(int i = 0;i<8;i++)
-					launchpad_setTop(i,0,0,0);
-			}
-
-			if(display_mode==0)
-			{
-
-				int cidx=0;
-				for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
-				{
-					if(cueues[cidx_l].visible)
+					if(cueues[0].paused==1)
 					{
-						if(cueues[cidx_l].active == 1)
+						cueues[0].paused=0;
+					}
+					else
+					{
+						cueues[0].paused=1;
+					}
+				}
+				else if(oscev.b ==2)
+				{
+					if(cueues[0].random==1)
+					{
+						cueues[0].random=0;
+					}
+					else
+					{
+						cueues[0].random=1;
+					}
+				}
+				else if(oscev.b ==3)
+				{
+				}
+				else if(oscev.b ==4)
+				{
+				}
+
+			}
+
+		}
+	}
+
+
+#ifdef LAUNCHPAD
+	while(launchpad_poll(&e)) 
+	{
+		if(display_mode == 0)
+		{
+			int cidx=0;
+			for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
+			{
+				if(cueues[cidx_l].visible)
+				{
+					if((e.type == 144)&&(e.x==lpmap[cidx*8])&&(e.y==127))
+					{
+						update_ui=1;
+						if(cueues[cidx_l].active==1)
 						{
-							launchpad_setMatrix(cidx,0,0,3,0);
+							cueues[cidx_l].active=0;
 						}
 						else
 						{
-							launchpad_setMatrix(cidx,0,1,0,0);
+							cueues[cidx_l].active=1;
 						}
-						if(queue_setup == cidx_l+1)
+					}
+					if((e.type == 144)&&(e.x==lpmap[cidx*8+1])&&(e.y==127))
+					{
+						update_ui=1;
+						if(queue_setup==cidx_l+1)
 						{
-							launchpad_setMatrix(cidx,1,3,0,1);
+							queue_setup=0;
+						}
+						else
+						{
+							queue_setup=cidx_l+1;
+						}
+					}
 
 
-							if(cueues[cidx_l].paused)
-							{
-								launchpad_setTop(0,1,0,0);
-							}
-							else
-							{
-								launchpad_setTop(0,0,3,0);
-							}
-							if(cueues[cidx_l].random)
-							{
-								launchpad_setTop(1,0,3,0);
-							}
-							else
-							{
-								launchpad_setTop(1,1,0,0);
-							}
-							if(cueues[queue_setup-1].off_available == 1)
-							{
-								if(cueues[cidx_l].in_off)
-								{
-									launchpad_setTop(2,0,3,0);
-								}
-								else
-								{
-									launchpad_setTop(2,1,0,0);
-								}
-							}
-							else
-							{
-								launchpad_setTop(2,0,0,0);
-							}
-							if(cueues[queue_setup-1].test_available == 1)
-							{
-								if(cueues[cidx_l].in_test)
-								{
-									launchpad_setTop(3,0,3,0);
-								}
-								else
-								{
-									launchpad_setTop(3,1,0,0);
-								}	
-							}
-							else
-							{
-								launchpad_setTop(3,0,0,0);
-							}
+					if((cueues[cidx_l].active == 1)&&(cueues[cidx_l].in_test==0)&&(cueues[cidx_l].in_off==0))
+					{
 
-							for(int i =0;i<cueues[cidx_l].length;i++)
+
+						int new_idx =  cueues[cidx_l].active_item;
+
+						if(queue_setup != cidx_l+1)
+						{
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
 							{
-								if(cueues[cidx_l].list[i].active==1)
+								int new_idx_tmp = e.x-(2+(cidx*16));
+								if(new_idx_tmp < cueues[cidx_l].length)
 								{
-									launchpad_setMatrix(cidx,2+i,0,3,0);
+									new_idx = new_idx_tmp;
 								}
-								else
+							}
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
+							{
+								printf("ssdsdsd: %i\n",e.x);
+								int new_idx_tmp = e.x-(10+(cidx*16));
+								if(new_idx_tmp < cueues[cidx_l].length)
 								{
-									launchpad_setMatrix(cidx,2+i,1,0,0);
+									new_idx = new_idx_tmp;
 								}
 							}
 						}
 						else
 						{
-							launchpad_setMatrix(cidx,1,1,0,0);
-							for(int i =0;i<cueues[cidx_l].length;i++)
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+2])&&(e.x <= lpmap[(cidx*8)+7]))
 							{
-								if((cueues[cidx_l].active==0)||(cueues[cidx_l].in_off==1)||(cueues[cidx_l].in_test==1))
+								int new_idx_tmp = e.x-(2+(cidx*16));
+								if(new_idx_tmp < cueues[cidx_l].length)
 								{
-									launchpad_setMatrix(cidx,2+i,1,0,0);
-								}
-								else
-								{
-									if(cueues[cidx_l].active_item == i)
-										launchpad_setMatrix(cidx,2+i,0,3,0);
+									update_ui=1;
+									if(cueues[cidx_l].list[new_idx_tmp].active==0)
+									{
+										cueues[cidx_l].list[new_idx_tmp].active=1;
+										cueues[cidx_l].active_elements++;
+									}
 									else
-										if(cueues[cidx_l].paused==1)
+									{
+										if(cueues[cidx_l].active_elements > 1)
 										{
-											launchpad_setMatrix(cidx,2+i,1,0,0);
+											cueues[cidx_l].list[new_idx_tmp].active=0;
+											cueues[cidx_l].active_elements--;
 										}
-										else if(cueues[cidx_l].list[i].active==0)
+									}
+								}
+							}
+							if((e.type == 144)&&(e.y == 127)&&(e.x >= lpmap[(cidx*8)+8])&&(e.x <= lpmap[(cidx*8)+15]))
+							{
+								int new_idx_tmp = e.x-(10+(cidx*16));
+								if(new_idx_tmp < cueues[cidx_l].length)
+								{
+									update_ui=1;
+									if(cueues[cidx_l].list[new_idx_tmp].active==0)
+									{
+										cueues[cidx_l].list[new_idx_tmp].active=1;
+										cueues[cidx_l].active_elements++;
+									}
+									else
+									{
+										if(cueues[cidx_l].active_elements > 1)
 										{
-											launchpad_setMatrix(cidx,2+i,1,0,0);
+											cueues[cidx_l].list[new_idx_tmp].active=0;
+											cueues[cidx_l].active_elements--;
 										}
-										else
-										{
-											launchpad_setMatrix(cidx,2+i,1,1,0);
-										}
+									}
 								}
 							}
 						}
 
+						int error = 0;
+						while(new_idx != cueues[cidx_l].active_item)
+						{
+							error++;
+							if(error > 20)
+							{
+								printf("error1 %i %i %i\n",new_idx,cidx_l,cueues[cidx_l].active);
+								exit(0);
+							}
+							update_ui=1;
 
+							cueues[cidx_l].list[cueues[cidx_l].active_item].deinit_fp();
+
+							cueues[cidx_l].active_item++;
+							if(cueues[cidx_l].length == cueues[cidx_l].active_item)
+								cueues[cidx_l].active_item=0;
+
+							cueues[cidx_l].tick=0;
+							cueues[cidx_l].list[cueues[cidx_l].active_item].init_fp();
+						}	
+					}
+					cidx++;
+					if(cueues[cidx_l].length>6)
 						cidx++;
-						if(cueues[cidx_l].length>6)
-							cidx++;
+				}
+			}
+		}
+		else if(display_mode == 1)
+		{
+			if((e.type == 144)&&(e.y == 127)&&((e.x%16) < 8))
+			{
+				int key = ((e.x-(e.x%8))/2)+e.x%8;
+
+				if(key < cueuecount)
+				{
+					if(cueues[key].visible==0)
+					{
+						cueues[key].visible=1;
+						update_ui=1;
+					}
+					else
+					{
+						cueues[key].visible=0;
+						update_ui=1;
+					}
+				}
+
+
+			}
+		}
+
+		if(queue_setup != 0)
+		{
+			if((e.type == 176)&&(e.x==104)&&(e.y==127))
+			{
+				update_ui=1;
+				if(cueues[queue_setup-1].paused==1)
+				{
+					cueues[queue_setup-1].paused=0;
+				}
+				else
+				{
+					cueues[queue_setup-1].paused=1;
+				}
+			}
+			if((e.type == 176)&&(e.x==105)&&(e.y==127))
+			{
+				update_ui=1;
+				if(cueues[queue_setup-1].random==1)
+				{
+					cueues[queue_setup-1].random=0;
+				}
+				else
+				{
+					cueues[queue_setup-1].random=1;
+				}
+			}
+			if((e.type == 176)&&(e.x==106)&&(e.y==127))
+			{
+				if(cueues[queue_setup-1].off_available == 1)
+				{
+					update_ui=1;
+					if(cueues[queue_setup-1].in_off==1)
+					{
+						cueues[queue_setup-1].in_off=0;
+					}
+					else
+					{
+						cueues[queue_setup-1].in_off=1;
+						cueues[queue_setup-1].in_test=0;
 					}
 				}
 			}
-			else if(display_mode==1)
+			if((e.type == 176)&&(e.x==107)&&(e.y==127))
 			{
-				for(int i=0;i<64;i++)
+				if(cueues[queue_setup-1].test_available == 1)
 				{
-					if(i < cueuecount)
+					update_ui=1;
+					if(cueues[queue_setup-1].in_test==1)
 					{
-						if(cueues[i].visible==1)
+						cueues[queue_setup-1].in_test=0;
+					}
+					else
+					{
+						cueues[queue_setup-1].in_test=1;
+						cueues[queue_setup-1].in_off=0;
+					}
+				}
+			}
+
+
+
+
+
+		}
+
+
+		if((e.type == 144)&&(e.x==88)&&(e.y==127))
+		{
+			update_ui=1;
+			if(display_mode != 1)
+			{
+				queue_setup=0;
+				display_mode = 1;
+				launchpad_setSide(5,2,2,1);
+			}
+			else
+			{
+				display_mode = 0;
+				launchpad_setSide(5,2,2,0);
+			}
+		}
+
+		printf("%d %d %d\n", e.x, e.y, e.type);
+	}
+
+#endif
+#ifdef KORG_CTRL
+	while(keyboard_poll(&midi_korg,&e)) 
+	{
+		printf("%d %d %d\n", e.x, e.y, e.type);
+		if((e.type == 176)&&(e.x>=16)&&(e.x<24))
+		{
+			//poti[16-e.x] = e.y;
+		}
+		if((e.type == 176)&&(e.x<8))
+		{
+			poti[e.x] = e.y;
+		}
+	}
+#endif
+
+
+	if(update_ui)
+	{
+		update_ui=0;
+
+
+		uint16_t osc_display_offset = 0;
+		for(uint16_t i = 0;i < 1;i++)
+		{
+			uint16_t j = i+osc_display_offset;
+
+			printf("update queue %i\n",j);
+
+			osc_update_queue_label(i,cueues[i].name);
+			if(cueues[i].active == 1)
+			{
+				osc_update_queue_active(i,1);
+			}
+			else
+			{
+				osc_update_queue_active(i,0);
+			}
+			if(cueues[i].paused == 0)
+			{
+				osc_update_queue_ctrl(i,1,1);
+			}
+			else
+			{
+				osc_update_queue_ctrl(i,1,0);
+			}
+
+			for(int x =0;x<16;x++)
+			{
+				if(x < cueues[i].length)
+				{
+					osc_update_queue_entry_label(i,x,cueues[i].list[x].name);
+					osc_update_queue_entry_led(i,x,1,1);
+					osc_update_queue_entry_led(i,x,2,0);
+					if(cueues[i].active_item == x)
+					{
+						osc_update_queue_entry_led(i,x,3,1);
+					}
+					else
+					{
+						osc_update_queue_entry_led(i,x,3,0);
+					}
+					if(cueues[i].list[x].active==1)
+					{
+						osc_update_queue_entry_button(i,x,1);
+					}
+					else
+					{
+						osc_update_queue_entry_button(i,x,0);
+					}
+				}
+				else
+				{
+					osc_update_queue_entry_label(i,x,"");
+					osc_update_queue_entry_led(i,x,1,0);
+					osc_update_queue_entry_led(i,x,2,0);
+					osc_update_queue_entry_led(i,x,3,0);
+					osc_update_queue_entry_button(i,x,0);
+				}
+
+			}
+
+
+
+		}
+		osc_send_flush();
+		printf("\n");
+
+
+
+
+#ifdef LAUNCHPAD
+
+		if(queue_setup == 0)
+		{
+			for(int i = 0;i<8;i++)
+				launchpad_setTop(i,0,0,0);
+		}
+
+		if(display_mode==0)
+		{
+
+			int cidx=0;
+			for(int cidx_l=0;cidx_l < cueuecount;cidx_l++)
+			{
+				if(cueues[cidx_l].visible)
+				{
+					if(cueues[cidx_l].active == 1)
+					{
+						launchpad_setMatrix(cidx,0,0,3,0);
+					}
+					else
+					{
+						launchpad_setMatrix(cidx,0,1,0,0);
+					}
+					if(queue_setup == cidx_l+1)
+					{
+						launchpad_setMatrix(cidx,1,3,0,1);
+
+
+						if(cueues[cidx_l].paused)
 						{
-							launchpad_setMatrix((i-(i%8))/8,i%8,0,3,0);
+							launchpad_setTop(0,1,0,0);
 						}
 						else
 						{
-							launchpad_setMatrix((i-(i%8))/8,i%8,1,0,0);
+							launchpad_setTop(0,0,3,0);
+						}
+						if(cueues[cidx_l].random)
+						{
+							launchpad_setTop(1,0,3,0);
+						}
+						else
+						{
+							launchpad_setTop(1,1,0,0);
+						}
+						if(cueues[queue_setup-1].off_available == 1)
+						{
+							if(cueues[cidx_l].in_off)
+							{
+								launchpad_setTop(2,0,3,0);
+							}
+							else
+							{
+								launchpad_setTop(2,1,0,0);
+							}
+						}
+						else
+						{
+							launchpad_setTop(2,0,0,0);
+						}
+						if(cueues[queue_setup-1].test_available == 1)
+						{
+							if(cueues[cidx_l].in_test)
+							{
+								launchpad_setTop(3,0,3,0);
+							}
+							else
+							{
+								launchpad_setTop(3,1,0,0);
+							}	
+						}
+						else
+						{
+							launchpad_setTop(3,0,0,0);
+						}
+
+						for(int i =0;i<cueues[cidx_l].length;i++)
+						{
+							if(cueues[cidx_l].list[i].active==1)
+							{
+								launchpad_setMatrix(cidx,2+i,0,3,0);
+							}
+							else
+							{
+								launchpad_setMatrix(cidx,2+i,1,0,0);
+							}
 						}
 					}
 					else
 					{
-						launchpad_setMatrix((i-(i%8))/8,i%8,0,0,0);
+						launchpad_setMatrix(cidx,1,1,0,0);
+						for(int i =0;i<cueues[cidx_l].length;i++)
+						{
+							if((cueues[cidx_l].active==0)||(cueues[cidx_l].in_off==1)||(cueues[cidx_l].in_test==1))
+							{
+								launchpad_setMatrix(cidx,2+i,1,0,0);
+							}
+							else
+							{
+								if(cueues[cidx_l].active_item == i)
+									launchpad_setMatrix(cidx,2+i,0,3,0);
+								else
+									if(cueues[cidx_l].paused==1)
+									{
+										launchpad_setMatrix(cidx,2+i,1,0,0);
+									}
+									else if(cueues[cidx_l].list[i].active==0)
+									{
+										launchpad_setMatrix(cidx,2+i,1,0,0);
+									}
+									else
+									{
+										launchpad_setMatrix(cidx,2+i,1,1,0);
+									}
+							}
+						}
+					}
+
+
+					cidx++;
+					if(cueues[cidx_l].length>6)
+						cidx++;
+				}
+			}
+		}
+		else if(display_mode==1)
+		{
+			for(int i=0;i<64;i++)
+			{
+				if(i < cueuecount)
+				{
+					if(cueues[i].visible==1)
+					{
+						launchpad_setMatrix((i-(i%8))/8,i%8,0,3,0);
+					}
+					else
+					{
+						launchpad_setMatrix((i-(i%8))/8,i%8,1,0,0);
 					}
 				}
-				printf("\n");
+				else
+				{
+					launchpad_setMatrix((i-(i%8))/8,i%8,0,0,0);
+				}
 			}
+			printf("\n");
+		}
 #endif
+	}
+
+
+	for(int cidx=0;cidx < cueuecount;cidx++)
+	{
+		unsigned long long current_time;
+		int32_t time_diff;
+		gettimeofday(&tv,NULL);
+		current_time = tv.tv_usec;
+		time_diff = current_time - cueues[cidx].last_frame;
+
+		if(time_diff < 0 )
+		{
+			time_diff+=1000000;
+		}
+
+		if(cueues[cidx].in_test == 1)
+		{
+			cueues[cidx].test();
+		}
+		else if(cueues[cidx].in_off == 1)
+		{
+			cueues[cidx].off();
+		}
+		else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&(cueues[cidx].active == 1))
+		{
+			//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
+
+			cueues[cidx].list[cueues[cidx].active_item].tick_fp();
+			if(cueues[cidx].paused==0) cueues[cidx].tick++;
+			gettimeofday(&tv,NULL);
+			cueues[cidx].last_frame = tv.tv_usec ;
+
 		}
 
 
-		for(int cidx=0;cidx < cueuecount;cidx++)
+
+	}
+
+	{
+		unsigned long long current_time;
+		int32_t time_diff;
+		gettimeofday(&tv,NULL);
+		current_time = tv.tv_usec;
+		time_diff = current_time - last_frame_ui;
+
+		if(time_diff < 0 )
 		{
-			unsigned long long current_time;
-			int32_t time_diff;
-			gettimeofday(&tv,NULL);
-			current_time = tv.tv_usec;
-			time_diff = current_time - cueues[cidx].last_frame;
-
-			if(time_diff < 0 )
-			{
-				time_diff+=1000000;
-			}
-
-			if(cueues[cidx].in_test == 1)
-			{
-				cueues[cidx].test();
-			}
-			else if(cueues[cidx].in_off == 1)
-			{
-				cueues[cidx].off();
-			}
-			else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&(cueues[cidx].active == 1))
-			{
-				//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
-
-				cueues[cidx].list[cueues[cidx].active_item].tick_fp();
-				if(cueues[cidx].paused==0) cueues[cidx].tick++;
-				gettimeofday(&tv,NULL);
-				cueues[cidx].last_frame = tv.tv_usec ;
-
-			}
-
-
-
+			time_diff+=1000000;
 		}
 
+		if((uint32_t)time_diff > 50000) // 20Hz
 		{
-			unsigned long long current_time;
-			int32_t time_diff;
+			time_diff -= 50000;
+			tick_count_ui++;
 			gettimeofday(&tv,NULL);
-			current_time = tv.tv_usec;
-			time_diff = current_time - last_frame_ui;
-
-			if(time_diff < 0 )
-			{
-				time_diff+=1000000;
-			}
-
-			if((uint32_t)time_diff > 50000) // 20Hz
-			{
-				time_diff -= 50000;
-				tick_count_ui++;
-				gettimeofday(&tv,NULL);
-				last_frame_ui = tv.tv_usec - time_diff;
-			}
+			last_frame_ui = tv.tv_usec - time_diff;
+		}
 #ifdef SDL_OUTPUT			
-			SDL_Rect rect = { 0, 0, 50, 50 };
-			SDL_FillRect(
+		SDL_Rect rect = { 0, 0, 50, 50 };
+		SDL_FillRect(
 				screen, 
 				&rect, 
 				SDL_MapRGB(screen->format,ch[16],ch[17],ch[18])
-			);
-			SDL_Rect rect2 = { 0, 50, 50, 50 };
-			SDL_FillRect(
+				);
+		SDL_Rect rect2 = { 0, 50, 50, 50 };
+		SDL_FillRect(
 				screen, 
 				&rect2, 
 				SDL_MapRGB(screen->format,ch[22],ch[23],ch[24])
-			);
-			SDL_Rect rect3 = { 50, 0, 50, 50 };
-			SDL_FillRect(
+				);
+		SDL_Rect rect3 = { 50, 0, 50, 50 };
+		SDL_FillRect(
 				screen, 
 				&rect3, 
 				SDL_MapRGB(screen->format,ch[28],ch[29],ch[30])
-			);
-			SDL_Rect rect4 = { 50, 50, 50, 50 };
-			SDL_FillRect(
+				);
+		SDL_Rect rect4 = { 50, 50, 50, 50 };
+		SDL_FillRect(
 				screen, 
 				&rect4, 
 				SDL_MapRGB(screen->format,ch[34],ch[35],ch[36])
-			);
+				);
 
-			/*SDL_Rect rect5 = { 100, 100, 300, 300 };
-			SDL_FillRect(
-				screen, 
-				&rect5, 
-				SDL_MapRGB(screen->format,0,0,0)
-			);*/
-			SDL_Rect rect6 = { 100+last_scan_x, 100+last_scan_y, 10, 10 };
-			SDL_FillRect(
+		/*SDL_Rect rect5 = { 100, 100, 300, 300 };
+		  SDL_FillRect(
+		  screen, 
+		  &rect5, 
+		  SDL_MapRGB(screen->format,0,0,0)
+		  );*/
+		SDL_Rect rect6 = { 100+last_scan_x, 100+last_scan_y, 10, 10 };
+		SDL_FillRect(
 				screen, 
 				&rect6, 
 				SDL_MapRGB(screen->format,0,55,55)
-			);
-			last_scan_x = ch[4];
-			last_scan_y = ch[5];
-			SDL_Rect rect7 = { 100+ch[4], 100+ch[5], 10, 10 };
-			SDL_FillRect(
+				);
+		last_scan_x = ch[4];
+		last_scan_y = ch[5];
+		SDL_Rect rect7 = { 100+ch[4], 100+ch[5], 10, 10 };
+		SDL_FillRect(
 				screen, 
 				&rect7, 
 				SDL_MapRGB(screen->format,255,255,255)
-			);
-			SDL_Flip(screen);
+				);
+		SDL_Flip(screen);
 #endif
-		}
+	}
 
 #ifdef LIBFTDI
-		ret = ftdi_set_line_property2(ftdi, 8, STOP_BIT_2, NONE,BREAK_ON);
-		if (ret < 0)
-		{
-			fprintf(stderr, "unable to set line parameters: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-			exit(-1);
-		}
-		usleep(100);
-		ret = ftdi_set_line_property2(ftdi, 8, STOP_BIT_2, NONE,BREAK_OFF);
-		if (ret < 0)
-		{
-			fprintf(stderr, "unable to set line parameters: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
-			exit(-1);
-		}
-		unsigned char c=0;
+	ret = ftdi_set_line_property2(ftdi, 8, STOP_BIT_2, NONE,BREAK_ON);
+	if (ret < 0)
+	{
+		fprintf(stderr, "unable to set line parameters: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+		exit(-1);
+	}
+	usleep(100);
+	ret = ftdi_set_line_property2(ftdi, 8, STOP_BIT_2, NONE,BREAK_OFF);
+	if (ret < 0)
+	{
+		fprintf(stderr, "unable to set line parameters: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+		exit(-1);
+	}
+	unsigned char c=0;
 
-		ret = ftdi_write_data(ftdi, &c, 0);
-		if (ret < 0)
-		{
-			fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
-		}
-		usleep(10);
+	ret = ftdi_write_data(ftdi, &c, 0);
+	if (ret < 0)
+	{
+		fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
+	}
+	usleep(10);
 
 
-		for(int i = 1;i<9;i++)
-		{
-//			ch[i]=poti[i-1]*2;
-		}
+	for(int i = 1;i<9;i++)
+	{
+		//			ch[i]=poti[i-1]*2;
+	}
 
-//			ch[29]=poti[0]*2;
-//		ch[30]=poti[1]*2;
-//		ch[1]=poti[1]*2;
-//		ch[2]=poti[2]*2;
-//		ch[3]=poti[3]*2;
-//		ch[6]=poti[4]*2;
-//		ch[7]=poti[5]*2;
+	//			ch[29]=poti[0]*2;
+	//		ch[30]=poti[1]*2;
+	//		ch[1]=poti[0]*2;
+	//		ch[2]=poti[1]*2;
+	//		ch[3]=poti[2]*2;
+	//		ch[4]=poti[3]*2;
+	//		ch[5]=poti[4]*2;
+	//		ch[6]=poti[5]*2;
 
-//		printf("%i %i\n",ch[1],ch[2]);
+	//		printf("%i %i\n",ch[1],ch[2]);
 
-		ret = ftdi_write_data(ftdi, ch, 65);
-		if (ret < 0)
-		{
-			fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
-		}
+	ret = ftdi_write_data(ftdi, ch, 65);
+	if (ret < 0)
+	{
+		fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
+	}
 #endif
-		usleep(3000);
+	usleep(3000);
 
 
 
 
 
-		for(int cidx=0;cidx < cueuecount;cidx++)
+	for(int cidx=0;cidx < cueuecount;cidx++)
+	{
+
+		if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
 		{
+			update_ui = 1;
 
-			if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+			cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+
+
+			int error = 0;
+			do
 			{
-				update_ui = 1;
-
-				cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
-								
-
-				int error = 0;
-				do
+				error++;
+				if(error > 20)
 				{
-								error++;
-								if(error > 20)
-								{
-									printf("error2\n");
-									exit(0);
-								}
-					cueues[cidx].active_item++;
-					if(cueues[cidx].length == cueues[cidx].active_item)
-						cueues[cidx].active_item=0;
+					printf("error2\n");
+					exit(0);
 				}
-				while(cueues[cidx].list[cueues[cidx].active_item].active==0);
-
-				cueues[cidx].tick=0;
-
-				cueues[cidx].list[cueues[cidx].active_item].init_fp();
+				cueues[cidx].active_item++;
+				if(cueues[cidx].length == cueues[cidx].active_item)
+					cueues[cidx].active_item=0;
 			}
+			while(cueues[cidx].list[cueues[cidx].active_item].active==0);
+
+			cueues[cidx].tick=0;
+
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
 		}
+	}
 	}
 	printf("exiting\n");
 #ifdef LIBFTDI

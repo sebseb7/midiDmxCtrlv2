@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "dmx_devices.h"
+#include "scan_limits.h"
 
 
 static uint16_t a;
@@ -44,7 +45,8 @@ static uint8_t tick(void)
 
 		//	printf("%i %i %i\n",new_angle,new_x,new_y);
 		}
-		while((new_x<0)||(new_y<0)||(new_x > 255)||(new_y>255));
+		while((new_x<0)||(new_y<SCAN_MIN_X)||(new_x > 255)||(new_y>SCAN_MAX_X));
+		//while((new_x<50)||(new_y<90)||(new_x > 175)||(new_y>180));
 		angle = new_angle;
 
 	}
@@ -82,7 +84,7 @@ static void deinit(void)
 
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
-	registerAnimation(init,tick,deinit, SCAN_2,TYPE_NORMAL,25, 5);
+	registerAnimation(init,tick,deinit, SCAN_2,TYPE_NORMAL,25, 5,"search");
 }
 
 
