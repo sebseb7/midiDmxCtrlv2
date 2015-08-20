@@ -402,8 +402,23 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		}
 		else
 		{
-			int qidx = oscev.a-1;
-			if(qidx < cueuecount)
+			int line = oscev.a-1;
+
+			int qidx = -1;
+
+			for(int i = 0; i < 32;i++)
+			{
+				if(line == 0)
+				{
+					qidx = i;
+				}
+				if(page_matrix[osc_current_page+i*8] == 1)
+				{
+					line--;
+				}
+			}
+			
+			if((qidx != -1)&&(qidx < cueuecount))
 			{
 				if(oscev.type == 1)
 				{
