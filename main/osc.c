@@ -7,6 +7,8 @@
 
 #include "lo/lo.h"
 
+void osc_page_flip(void);
+
 static lo_address t;
 static lo_server s;
 static lo_bundle current_bundle;
@@ -27,7 +29,6 @@ void osc_connect(const char * 	host)
 void osc_send_flush(void)
 {
 	lo_send_bundle_from(t,s,current_bundle);
-//	lo_send_bundle(t,current_bundle);
 	lo_bundle_free(current_bundle);
 	current_bundle = lo_bundle_new(LO_TT_IMMEDIATE);
 	bundle_size=0;
@@ -38,6 +39,20 @@ void osc_send_f(const char * 	path,float num)
 	lo_message mess = lo_message_new();
 
 	lo_message_add_float(mess,num);
+
+	char * newpath =  strdup(path);
+	lo_bundle_add_message(current_bundle,newpath,mess);
+	bundle_size++;
+	if(bundle_size > 200)
+		osc_send_flush();
+
+}
+void osc_send_ff(const char * 	path,float num,float num2)
+{
+	lo_message mess = lo_message_new();
+
+	lo_message_add_float(mess,num);
+	lo_message_add_float(mess,num2);
 
 	char * newpath =  strdup(path);
 	lo_bundle_add_message(current_bundle,newpath,mess);
@@ -85,53 +100,93 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 
 
 	int osc_type = 0;
-	int osc_a;
-	int osc_b;
-	float osc_value;
-	
+	int osc_a=0;
+	int osc_b=0;
+	float osc_value=0.0f;
+
 	if(strcmp("1",token)==0)
 	{
-		token = strsep (&running, delimiters);
-		if(strcmp("q",token)==0)
+		printf("%s\n",running);
+		if(running != NULL)
 		{
 			token = strsep (&running, delimiters);
-			osc_a = atoi(token);
-			token = strsep (&running, delimiters);
-		
-			if(strcmp("toggle",token)==0)
+			if(strcmp("q",token)==0)
 			{
-				osc_type = 1;
 				token = strsep (&running, delimiters);
-				if(strcmp("1",token)==0)
+				osc_a = atoi(token);
+				token = strsep (&running, delimiters);
+
+				if(strcmp("toggle",token)==0)
 				{
+					osc_type = 1;
 					token = strsep (&running, delimiters);
-					osc_b = atoi(token);
+					if(strcmp("1",token)==0)
+					{
+						token = strsep (&running, delimiters);
+						osc_b = atoi(token);
+						osc_value = argv[0]->f;
+					}
+				}
+				if(strcmp("ctrl",token)==0)
+				{
+					osc_type = 3;
+					token = strsep (&running, delimiters);
+					if(strcmp("1",token)==0)
+					{
+						token = strsep (&running, delimiters);
+						osc_b = atoi(token);
+						osc_value = argv[0]->f;
+					}
+				}
+				else if(strcmp("en",token)==0)
+				{
+					osc_type = 2;
 					osc_value = argv[0]->f;
 				}
 			}
-			if(strcmp("ctrl",token)==0)
+			else if(strcmp("pageflip",token)==0)
 			{
-				osc_type = 3;
 				token = strsep (&running, delimiters);
-				if(strcmp("1",token)==0)
-				{
-					token = strsep (&running, delimiters);
-					osc_b = atoi(token);
-					osc_value = argv[0]->f;
-				}
-			}
-			else if(strcmp("en",token)==0)
-			{
-				osc_type = 2;
-				osc_value = argv[0]->f;
+				token = strsep (&running, delimiters);
+				osc_a = atoi(token);
+				osc_type = 4;
+				osc_page_flip();
 			}
 		}
+		else
+		{
+			osc_type=5;
+			osc_a=1;
+		}
 	}
-	free(copy);
+	else if(strcmp("2",token)==0)
+	{
+		if(running != NULL)
+		{
+		}
+		else
+		{
+			osc_type=5;
+			osc_a=2;
+		}
+
+	}
+	else if(strcmp("3",token)==0)
+	{
+		if(running != NULL)
+		{
+		}
+		else
+		{
+			osc_type=5;
+			osc_a=3;
+		}
+
+	}
 
 
 
-/*
+
 	int i;
 	printf("path: <%s>\n", path);
 	for (i = 0; i < argc; i++) {
@@ -141,8 +196,11 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 	}
 	printf("\n");
 	fflush(stdout);
-*/
-	
+
+
+	free(copy);
+
+
 	if(osc_type != 0)
 	{
 		int diff;
@@ -299,3 +357,49 @@ void osc_update_queue_ctrl(uint16_t idx,uint16_t ctrl_idx,uint16_t value)
 	ctrl_init[(idx)*4+(ctrl_idx-1)] = value;
 }
 
+void osc_page_flip(void)
+{
+	for(int i = 0;i<6;i++) label_init[i]=-1;
+	for(int i = 0;i<(6*16);i++) entry_label_init[i]=-1;
+}
+
+static int page_init = -1;
+void osc_update_page(uint16_t idx)
+{
+	if(page_init == idx) return;
+	char path[200];
+	if(page_init != -1) sprintf(path, "/1/pageflip/1/%i",page_init+1);
+	osc_send_f(path,0.0f);
+	sprintf(path, "/1/pageflip/1/%i",idx+1);
+	osc_send_f(path,1.0f);
+	page_init = idx;
+}
+
+
+
+
+// this needs buffering!
+
+void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value)
+{
+	char path[200];
+	sprintf(path, "/2/nr_%i",ch+1);
+	char label[200];
+	sprintf(label, "%i",ch+1);
+	osc_send_s(path,label);
+	
+	sprintf(path, "/2/val_%i",ch+1);
+	sprintf(label, "%i",value);
+	osc_send_s(path,label);
+
+	sprintf(path, "/2/fader/%i",ch+1);
+	osc_send_f(path,value/255.0f);
+
+
+}
+
+// this needs buffering!
+void osc_update_xy(uint16_t x,uint16_t y)
+{
+	osc_send_ff("/2/xy1",x/255.0f,y/255.0f);
+}

@@ -53,6 +53,40 @@ static const uint8_t lpmap[64] = {
 
 };
 
+static uint8_t page_matrix[8*32] = {
+	1,0,0,0,0,0,0,0,
+	1,1,0,0,0,0,0,0,
+	1,1,0,0,0,0,0,0,
+	1,1,0,0,0,0,0,0,
+	1,1,0,0,0,0,0,0,
+	1,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+};
 
 struct animation {
 	init_fun init_fp;
@@ -231,6 +265,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	//osc_connect("169.254.112.29");
 
 	osc_start_server();
+	uint16_t osc_current_page = 0;
+	uint16_t osc_current_tab = 1;
 
 #ifdef LAUNCHPAD
 	launchpad_init();
@@ -313,6 +349,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	uint32_t tick_count_ui = 0;
 
 	unsigned long long last_frame_ui=0;
+	unsigned long long last_frame_fader_ui=0;
 
 	struct timeval tv;
 
@@ -354,105 +391,117 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	while(poll_osc_event(&oscev))
 	{
 		printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
-		int qidx = oscev.a-1;
-		if(qidx < cueuecount)
+		if(oscev.type == 4)
 		{
-			if(oscev.type == 1)
+			update_ui=1;
+			osc_current_page = oscev.a-1;
+		}
+		else if(oscev.type == 5)
+		{
+			osc_current_tab=oscev.a;
+		}
+		else
+		{
+			int qidx = oscev.a-1;
+			if(qidx < cueuecount)
 			{
-				if(oscev.b-1 < cueues[qidx].length)
+				if(oscev.type == 1)
 				{
-					update_ui=1;
-
-					if(cueues[qidx].paused==1)
+					if(oscev.b-1 < cueues[qidx].length)
 					{
+						update_ui=1;
 
-
-						int new_idx =  oscev.b-1;
-
-						// why this loop (relict from linked-list times?)
-						int error = 0;
-						while(new_idx != cueues[qidx].active_item)
+						if(cueues[qidx].paused==1)
 						{
-							error++;
-							if(error > 20)
+
+
+							int new_idx =  oscev.b-1;
+
+							// why this loop (relict from linked-list times?)
+							int error = 0;
+							while(new_idx != cueues[qidx].active_item)
 							{
-								printf("error1a\n");
-								exit(0);
-							}
-							update_ui=1;
+								error++;
+								if(error > 20)
+								{
+									printf("error1a\n");
+									exit(0);
+								}
+								update_ui=1;
 
-							cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
+								cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
 
-							cueues[qidx].active_item++;
-							if(cueues[qidx].length == cueues[qidx].active_item)
-								cueues[qidx].active_item=0;
+								cueues[qidx].active_item++;
+								if(cueues[qidx].length == cueues[qidx].active_item)
+									cueues[qidx].active_item=0;
 
-							cueues[qidx].tick=0;
-							cueues[qidx].list[cueues[qidx].active_item].init_fp();
-						}	
-					}
-					else
-					{
-						if(cueues[qidx].list[oscev.b-1].active==0)
-						{
-							cueues[qidx].list[oscev.b-1].active=1;
-							cueues[qidx].active_elements++;
+								cueues[qidx].tick=0;
+								cueues[qidx].list[cueues[qidx].active_item].init_fp();
+							}	
 						}
 						else
 						{
-							if(cueues[qidx].active_elements > 1)
+							if(cueues[qidx].list[oscev.b-1].active==0)
 							{
-								cueues[qidx].list[oscev.b-1].active=0;
-								cueues[qidx].active_elements--;
+								cueues[qidx].list[oscev.b-1].active=1;
+								cueues[qidx].active_elements++;
+							}
+							else
+							{
+								if(cueues[qidx].active_elements > 1)
+								{
+									cueues[qidx].list[oscev.b-1].active=0;
+									cueues[qidx].active_elements--;
+								}
 							}
 						}
 					}
 				}
-			}
-			else if(oscev.type == 2)
-			{
-				update_ui=1;
-				if(cueues[qidx].active==1)
+				else if(oscev.type == 2)
 				{
-					cueues[qidx].active=0;
-				}
-				else
-				{
-					cueues[qidx].active=1;
-				}
-			}
-			else if(oscev.type == 3)
-			{
-				update_ui=1;
-				if(oscev.b == 1)
-				{
-					if(cueues[qidx].paused==1)
+					update_ui=1;
+					if(cueues[qidx].active==1)
 					{
-						cueues[qidx].paused=0;
+						cueues[qidx].active=0;
 					}
 					else
 					{
-						cueues[qidx].paused=1;
+						cueues[qidx].active=1;
 					}
 				}
-				else if(oscev.b ==2)
+				else if(oscev.type == 3)
 				{
-					if(cueues[qidx].random==1)
+					update_ui=1;
+					if(oscev.b == 1)
 					{
-						cueues[qidx].random=0;
+						if(cueues[qidx].paused==1)
+						{
+							cueues[qidx].paused=0;
+						}
+						else
+						{
+							cueues[qidx].paused=1;
+						}
 					}
-					else
+					else if(oscev.b ==2)
 					{
-						cueues[qidx].random=1;
+						if(cueues[qidx].random==1)
+						{
+							cueues[qidx].random=0;
+						}
+						else
+						{
+							cueues[qidx].random=1;
+						}
 					}
-				}
-				else if(oscev.b ==3)
-				{
-				}
-				else if(oscev.b ==4)
-				{
-				}
+					else if(oscev.b ==3)
+					{
+					}
+					else if(oscev.b ==4)
+					{
+					}
 
+				}
 			}
 		}
 	}
@@ -723,70 +772,97 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	{
 		update_ui=0;
 
+		osc_update_page(osc_current_page);
 
-		//uint16_t osc_display_offset = 0;
-		for(uint16_t i = 0;i < 5;i++)
+
+		int i = 0;
+		while((i<32)&&(page_matrix[osc_current_page+i*8]==0)) i++;
+
+
+		for(uint16_t j = 0;j < 6;j++)
 		{
-			//uint16_t j = i+osc_display_offset;
 
-			osc_update_queue_label(i,cueues[i].name);
-			if(cueues[i].active == 1)
+			if((i < cueuecount)&&(page_matrix[osc_current_page+i*8]==1))
 			{
-				osc_update_queue_active(i,1);
-			}
-			else
-			{
-				osc_update_queue_active(i,0);
-			}
-			if(cueues[i].paused == 0)
-			{
-				osc_update_queue_ctrl(i,1,1);
-			}
-			else
-			{
-				osc_update_queue_ctrl(i,1,0);
-			}
 
-			for(int x =0;x<16;x++)
-			{
-				if(x < cueues[i].length)
+
+				osc_update_queue_label(j,cueues[i].name);
+				if(cueues[i].active == 1)
 				{
-					osc_update_queue_entry_label(i,x,cueues[i].list[x].name);
-					osc_update_queue_entry_led(i,x,1,1);
-					osc_update_queue_entry_led(i,x,2,0);
-					if(cueues[i].active_item == x)
-					{
-						osc_update_queue_entry_led(i,x,3,1);
-					}
-					else
-					{
-						osc_update_queue_entry_led(i,x,3,0);
-					}
-					if(cueues[i].list[x].active==1)
-					{
-						osc_update_queue_entry_button(i,x,1);
-					}
-					else
-					{
-						osc_update_queue_entry_button(i,x,0);
-					}
+					osc_update_queue_active(j,1);
 				}
 				else
 				{
-					osc_update_queue_entry_label(i,x,"");
-					osc_update_queue_entry_led(i,x,1,0);
-					osc_update_queue_entry_led(i,x,2,0);
-					osc_update_queue_entry_led(i,x,3,0);
-					osc_update_queue_entry_button(i,x,0);
+					osc_update_queue_active(j,0);
+				}
+				if(cueues[i].paused == 0)
+				{
+					osc_update_queue_ctrl(j,1,1);
+				}
+				else
+				{
+					osc_update_queue_ctrl(j,1,0);
 				}
 
-			}
+				for(int x =0;x<16;x++)
+				{
+					if(x < cueues[i].length)
+					{
+						osc_update_queue_entry_label(j,x,cueues[i].list[x].name);
+						osc_update_queue_entry_led(j,x,1,1);
+						osc_update_queue_entry_led(j,x,2,0);
+						if(cueues[i].active_item == x)
+						{
+							osc_update_queue_entry_led(j,x,3,1);
+						}
+						else
+						{
+							osc_update_queue_entry_led(j,x,3,0);
+						}
+						if(cueues[i].list[x].active==1)
+						{
+							osc_update_queue_entry_button(j,x,1);
+						}
+						else
+						{
+							osc_update_queue_entry_button(j,x,0);
+						}
+					}
+					else
+					{
+						osc_update_queue_entry_label(j,x,"");
+						osc_update_queue_entry_led(j,x,1,0);
+						osc_update_queue_entry_led(j,x,2,0);
+						osc_update_queue_entry_led(j,x,3,0);
+						osc_update_queue_entry_button(j,x,0);
+					}
 
+				}
+			}
+			else 
+			{
+				osc_update_queue_label(j,"");
+				osc_update_queue_active(j,0);
+				osc_update_queue_ctrl(j,1,0);
+
+				for(int x =0;x<16;x++)
+				{
+					osc_update_queue_entry_label(j,x,"");
+					osc_update_queue_entry_led(j,x,1,0);
+					osc_update_queue_entry_led(j,x,2,0);
+					osc_update_queue_entry_led(j,x,3,0);
+					osc_update_queue_entry_button(j,x,0);
+				}
+			}
+			do
+			{
+				i++;
+			}
+			while((i<32)&&(page_matrix[osc_current_page+i*8]==0));
 
 
 		}
 		osc_send_flush();
-		printf("\n");
 
 
 
@@ -977,6 +1053,40 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	}
+
+	{
+		unsigned long long current_time;
+		int32_t time_diff;
+		gettimeofday(&tv,NULL);
+		current_time = tv.tv_usec;
+		time_diff = current_time - last_frame_fader_ui;
+
+		if(time_diff < 0 )
+		{
+			time_diff+=1000000;
+		}
+
+		if((uint32_t)time_diff > 200000) // 5Hz
+		{
+			time_diff -= 200000;
+			gettimeofday(&tv,NULL);
+			last_frame_fader_ui = tv.tv_usec - time_diff;
+
+
+			if(osc_current_tab == 2)
+			{
+				for(int i=0;i<16;i++)
+				{
+					osc_update_fader(i,i,ch[i]);	
+				}
+				osc_update_xy(ch[4],ch[5]);	
+				osc_send_flush();
+			}
+
+		}
+	}
+
+
 
 	{
 		unsigned long long current_time;
