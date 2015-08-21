@@ -29,6 +29,7 @@ void osc_update_queue_ctrl(uint16_t idx,uint16_t ctrl_idx, uint16_t value);
 void osc_update_page(uint16_t idx);
 void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value);	
 void osc_update_xy(uint16_t x,uint16_t y);
+void osc_update_manual_state(uint16_t slot,uint16_t state);
 
 #endif
 

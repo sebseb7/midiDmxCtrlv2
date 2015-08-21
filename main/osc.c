@@ -163,6 +163,31 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 	{
 		if(running != NULL)
 		{
+			token = strsep (&running, delimiters);
+			if(strcmp("override",token)==0)
+			{
+				token = strsep (&running, delimiters);
+				token = strsep (&running, delimiters);
+				osc_a = atoi(token);
+				osc_type = 6;
+			}
+			else if(strcmp("fader",token)==0)
+			{
+				token = strsep (&running, delimiters);
+				osc_a = atoi(token);
+				osc_value = argv[0]->f;
+				osc_type = 7;
+			}
+			else if(strcmp("encoder1",token)==0)
+			{
+				osc_a = argv[0]->f;
+				osc_type = 8;
+			}
+			else if(strcmp("encoder2",token)==0)
+			{
+				osc_a = argv[0]->f;
+				osc_type = 9;
+			}
 		}
 		else
 		{
@@ -383,16 +408,16 @@ void osc_update_page(uint16_t idx)
 void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value)
 {
 	char path[200];
-	sprintf(path, "/2/nr_%i",ch+1);
+	sprintf(path, "/2/nr_%i",slot+1);
 	char label[200];
 	sprintf(label, "%i",ch+1);
 	osc_send_s(path,label);
 	
-	sprintf(path, "/2/val_%i",ch+1);
+	sprintf(path, "/2/val_%i",slot+1);
 	sprintf(label, "%i",value);
 	osc_send_s(path,label);
 
-	sprintf(path, "/2/fader/%i",ch+1);
+	sprintf(path, "/2/fader/%i",slot+1);
 	osc_send_f(path,value/255.0f);
 
 
@@ -403,3 +428,13 @@ void osc_update_xy(uint16_t x,uint16_t y)
 {
 	osc_send_ff("/2/xy1",x/255.0f,y/255.0f);
 }
+
+
+
+void osc_update_manual_state(uint16_t slot,uint16_t state)
+{
+	char path[200];
+	sprintf(path, "/2/override/1/%i",slot+1);
+	osc_send_f(path,state);
+}
+

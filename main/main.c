@@ -26,6 +26,9 @@
 
 static uint8_t ch[512];
 static uint8_t in[512];
+static uint8_t out[512];
+static uint8_t manual[512];
+static uint8_t override[512];
 static uint8_t poti[8];
 
 static int running = 1;
@@ -40,6 +43,9 @@ void intHandler(int dummy)
 
 static int cueuecount = 0;
 static uint32_t update_ui = 1;
+
+static int osc_manual_ch_offset_fine = 0;
+static int osc_manual_ch_offset = 0;
 
 static const uint8_t lpmap[64] = {
 	0 ,1 ,2 ,3 ,4 ,5 ,6 ,7 ,
@@ -395,6 +401,45 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		{
 			update_ui=1;
 			osc_current_page = oscev.a-1;
+		}
+		else if(oscev.type == 6)
+		{
+			if(manual[oscev.a-1+osc_manual_ch_offset]==1)
+			{
+				manual[oscev.a-1+osc_manual_ch_offset]=0;
+			}
+			else
+			{
+				manual[oscev.a-1+osc_manual_ch_offset]=1;
+			}
+		}
+		else if(oscev.type == 7)
+		{
+			override[oscev.a-1+osc_manual_ch_offset] = 255.0f * oscev.value;
+		}
+		else if(oscev.type == 8)
+		{
+			if((oscev.a == 1)&&(osc_manual_ch_offset < 239))
+			{
+				osc_manual_ch_offset_fine++;
+			}
+			else if((oscev.a == 0)&&(osc_manual_ch_offset > 0))
+			{
+				osc_manual_ch_offset_fine--;
+			}
+			osc_manual_ch_offset = osc_manual_ch_offset_fine>>3;
+		}
+		else if(oscev.type == 9)
+		{
+			if((oscev.a == 1)&&(osc_manual_ch_offset < 238))
+			{
+				osc_manual_ch_offset_fine+=16;
+			}
+			else if((oscev.a == 0)&&(osc_manual_ch_offset > 1))
+			{
+				osc_manual_ch_offset_fine-=16;
+			}
+			osc_manual_ch_offset = osc_manual_ch_offset_fine>>3;
 		}
 		else if(oscev.type == 5)
 		{
@@ -1068,6 +1113,19 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	}
+	
+	
+	for(int i = 0;i<512;i++)
+	{
+		if(manual[i] == 0)
+		{
+			out[i]=ch[i];
+		}
+		else
+		{
+			out[i]=override[i];
+		}
+	}
 
 	{
 		unsigned long long current_time;
@@ -1092,9 +1150,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			{
 				for(int i=0;i<16;i++)
 				{
-					osc_update_fader(i,i,ch[i]);	
+					osc_update_fader(i,i+osc_manual_ch_offset,out[i+osc_manual_ch_offset]);	
+					osc_update_manual_state(i,manual[i+osc_manual_ch_offset]);	
 				}
-				osc_update_xy(ch[4],ch[5]);	
+				osc_update_xy(out[4],out[5]);	
 				osc_send_flush();
 			}
 
@@ -1195,24 +1254,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	}
 	usleep(10);
 
-
-	for(int i = 1;i<9;i++)
-	{
-		//			ch[i]=poti[i-1]*2;
-	}
-
-	//			ch[29]=poti[0]*2;
-	//		ch[30]=poti[1]*2;
-	//		ch[1]=poti[0]*2;
-	//		ch[2]=poti[1]*2;
-	//		ch[3]=poti[2]*2;
-	//		ch[4]=poti[3]*2;
-	//		ch[5]=poti[4]*2;
-	//		ch[6]=poti[5]*2;
-
-	//		printf("%i %i\n",ch[1],ch[2]);
-
-	ret = ftdi_write_data(ftdi, ch, 65);
+	ret = ftdi_write_data(ftdi, out, 65);
 	if (ret < 0)
 	{
 		fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
