@@ -61,7 +61,8 @@ void constructor(void) {
 	registerAnimation(init,tick_5,deinit, SCAN_2_STROBE,TYPE_NORMAL,10, 4,"fast");
 //	registerAnimation(init,tick_6,deinit, SCAN_2_STROBE,TYPE_NORMAL,10, 4);
 //	registerAnimation(init,tick_7,deinit, SCAN_2_STROBE,TYPE_NORMAL,10, 4);
-	queueInitialization(SCAN_2_STROBE,1,1,0,"scan250_strob");
+	queueInitialization(SCAN_2_STROBE,0,1,0,"scan250_strob");
+	queuePageSet(SCAN_2_STROBE,0,1);
 }
 
 

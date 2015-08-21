@@ -83,6 +83,7 @@ static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
 	registerAnimation(init,tick,deinit, QUADPHASE, TYPE_NORMAL,80,2,"RGBStrobe");
 	queueInitialization(QUADPHASE,1,0,0,"Quadphase");
+	queuePageSet(QUADPHASE,1,1);
 }
 
 

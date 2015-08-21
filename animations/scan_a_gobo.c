@@ -116,6 +116,7 @@ void constructor(void) {
 //	registerAnimation(init,tick_13,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 	registerAnimation(init,tick_14,deinit, SCAN_2_GOBO,TYPE_NORMAL,10, 4);
 */	queueInitialization(SCAN_2_GOBO,1,1,0,"scan250_gobo");
+	queuePageSet(SCAN_2_GOBO,0,1);
 }
 
 

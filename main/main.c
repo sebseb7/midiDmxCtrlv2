@@ -60,12 +60,12 @@ static const uint8_t lpmap[64] = {
 };
 
 static uint8_t page_matrix[8*32] = {
-	1,0,0,0,0,0,0,0,
-	1,1,0,0,0,0,0,0,
-	1,1,0,0,0,0,0,0,
-	1,1,0,0,0,0,0,0,
-	1,1,0,0,0,0,0,0,
-	1,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,
@@ -233,29 +233,50 @@ void queueInitialization(uint8_t cueue_type,int active,int visible,int paused, c
 	cueues[cidx].paused=paused;
 	cueues[cidx].name=name;
 }
-void queueAniActive(uint8_t cueue_type,int item,int active)
+void queueRemoteActive(uint8_t cueue_type,int active, int entry)
 {
 	int cidx = cueueidx[cueue_type]-1;
+	
 
-	if(cueues[cidx].length > item)
+	if(active == 1)
 	{
-		if((cueues[cidx].list[item].active == 0)&&(active==1))
+		cueues[cidx].active_remote=1;
+		if(cueues[cidx].active==0)
 		{
-			cueues[cidx].list[item].active=1;
-			cueues[cidx].active_elements++;
-			update_ui=1;
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
 		}
-		if((cueues[cidx].list[item].active == 1)&&(active==0))
+		for(int x =0;x<cueues[cidx].length;x++)
 		{
-			if(cueues[cidx].active_elements>0)
+			if(x == entry)
 			{
-				cueues[cidx].list[item].active=0;
-				cueues[cidx].active_elements--;
-				update_ui=1;
+				cueues[cidx].list[x].active_remote=1;
+			}
+			else
+			{
+				cueues[cidx].list[x].active_remote=0;
 			}
 		}
 	}
+	else
+	{
+		cueues[cidx].active_remote=0;
+		if(cueues[cidx].active==0)
+		{
+			cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+		}
+		for(int x =0;x<cueues[cidx].length;x++)
+		{
+			cueues[cidx].list[x].active_remote=0;
+		}
+	}
 }
+void queuePageSet(uint8_t cueue_type,int page,int active)
+{
+	int cidx = cueueidx[cueue_type]-1;
+
+	page_matrix[page+cidx*8] = active;
+}
+
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count,char * name)
 {
@@ -530,10 +551,12 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					if(cueues[qidx].active==1)
 					{
 						cueues[qidx].active=0;
+						cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
 					}
 					else
 					{
 						cueues[qidx].active=1;
+						cueues[qidx].list[cueues[qidx].active_item].init_fp();
 					}
 				}
 				else if(oscev.type == 3)
@@ -1122,7 +1145,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		{
 			cueues[cidx].off();
 		}
-		else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&(cueues[cidx].active == 1))
+		else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&((cueues[cidx].active == 1)||(cueues[cidx].active_remote == 1)))
 		{
 			//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
 
