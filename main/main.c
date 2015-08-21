@@ -950,6 +950,9 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				osc_update_queue_label(j,"");
 				osc_update_queue_active(j,0);
 				osc_update_queue_ctrl(j,1,0);
+				osc_update_queue_ctrl(j,2,0);
+				osc_update_queue_ctrl(j,3,0);
+				osc_update_queue_ctrl(j,4,0);
 
 				for(int x =0;x<16;x++)
 				{
