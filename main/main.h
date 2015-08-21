@@ -9,7 +9,7 @@
 #define LAUNCHPAD
 
 
-//#define LIBFTDI
+#define LIBFTDI
 
 enum {
 	QUADPHASE = 0,
@@ -17,6 +17,7 @@ enum {
 	SCAN_2_COL,
 	SCAN_2_GOBO,
 	SCAN_2_STROBE,
+	SCAN_2_MULTI,
 	SCAN_COL,
 	SCAN_GOBO,
 	SCAN_GOBO_R,

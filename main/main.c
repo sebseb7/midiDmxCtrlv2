@@ -98,7 +98,9 @@ struct animation {
 	init_fun init_fp;
 	tick_fun tick_fp;
 	deinit_fun deinit_fp;
+	uint16_t initialized;
 	uint16_t active;
+	uint16_t active_remote;
 	uint32_t duration;
 	uint32_t timing;
 	char * name;
@@ -114,6 +116,7 @@ struct cueue {
 	uint8_t length;
 	uint8_t visible;
 	uint8_t active;
+	uint8_t active_remote;
 	uint8_t random;
 	uint8_t paused;
 	uint8_t in_test;
@@ -163,6 +166,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 			cueues[i].tick=0;
 			cueues[i].last_frame=0;
 			cueues[i].active=1;
+			cueues[i].active_remote=0;
 			cueues[i].paused=0;
 			cueues[i].random=0;
 			cueues[i].in_test=0;
@@ -197,6 +201,8 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].list[cueues[cidx].length].duration = d;
 		cueues[cidx].list[cueues[cidx].length].timing = t;
 		cueues[cidx].list[cueues[cidx].length].active = 1;
+		cueues[cidx].list[cueues[cidx].length].initialized = 0;
+		cueues[cidx].list[cueues[cidx].length].active_remote = 0;
 		cueues[cidx].list[cueues[cidx].length].name = name;
 		cueues[cidx].length++;
 		cueues[cidx].active_elements++;
@@ -349,7 +355,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
-		cueues[cidx].list[cueues[cidx].active_item].init_fp();
+		if(cueues[cidx].active == 1)
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
 	}
 
 	uint32_t tick_count_ui = 0;
@@ -404,18 +411,18 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		}
 		else if(oscev.type == 6)
 		{
-			if(manual[oscev.a-1+osc_manual_ch_offset]==1)
+			if(manual[oscev.a+osc_manual_ch_offset]==1)
 			{
-				manual[oscev.a-1+osc_manual_ch_offset]=0;
+				manual[oscev.a+osc_manual_ch_offset]=0;
 			}
 			else
 			{
-				manual[oscev.a-1+osc_manual_ch_offset]=1;
+				manual[oscev.a+osc_manual_ch_offset]=1;
 			}
 		}
 		else if(oscev.type == 7)
 		{
-			override[oscev.a-1+osc_manual_ch_offset] = 255.0f * oscev.value;
+			override[oscev.a+osc_manual_ch_offset] = 255.0f * oscev.value;
 		}
 		else if(oscev.type == 8)
 		{
@@ -863,6 +870,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				{
 					osc_update_queue_ctrl(j,1,0);
 				}
+				if(cueues[i].active_remote == 1)
+				{
+					osc_update_queue_ctrl(j,4,1);
+				}
+				else
+				{
+					osc_update_queue_ctrl(j,4,0);
+				}
 
 				for(int x =0;x<16;x++)
 				{
@@ -886,6 +901,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 						else
 						{
 							osc_update_queue_entry_button(j,x,0);
+						}
+						if(cueues[i].list[x].active_remote==1)
+						{
+							osc_update_queue_entry_led(j,x,2,1);
+						}
+						else
+						{
+							osc_update_queue_entry_led(j,x,2,0);
 						}
 					}
 					else
@@ -1150,8 +1173,8 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			{
 				for(int i=0;i<16;i++)
 				{
-					osc_update_fader(i,i+osc_manual_ch_offset,out[i+osc_manual_ch_offset]);	
-					osc_update_manual_state(i,manual[i+osc_manual_ch_offset]);	
+					osc_update_fader(i,i+osc_manual_ch_offset,out[1+i+osc_manual_ch_offset]);	
+					osc_update_manual_state(i,manual[1+i+osc_manual_ch_offset]);	
 				}
 				osc_update_xy(out[4],out[5]);	
 				osc_send_flush();
@@ -1269,7 +1292,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
 
-		if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+		if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].active_remote == 0)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
 		{
 			update_ui = 1;
 
@@ -1290,6 +1313,32 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					cueues[cidx].active_item=0;
 			}
 			while(cueues[cidx].list[cueues[cidx].active_item].active==0);
+
+			cueues[cidx].tick=0;
+
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
+		}
+		else if((cueues[cidx].list[cueues[cidx].active_item].active_remote!=1)&&(cueues[cidx].active_remote == 1)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+		{
+			update_ui = 1;
+
+			cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+
+
+			int error = 0;
+			do
+			{
+				error++;
+				if(error > 20)
+				{
+					printf("error2b\n");
+					exit(0);
+				}
+				cueues[cidx].active_item++;
+				if(cueues[cidx].length == cueues[cidx].active_item)
+					cueues[cidx].active_item=0;
+			}
+			while(cueues[cidx].list[cueues[cidx].active_item].active_remote==0);
 
 			cueues[cidx].tick=0;
 

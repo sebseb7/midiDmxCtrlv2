@@ -8,7 +8,6 @@
 static uint8_t tick_0(void) 
 {
 	setCh(3,255);
-	setCh(6,255);
 	return 1;
 }
 
@@ -16,43 +15,40 @@ static uint8_t tick_0(void)
 static __attribute__((unused)) uint8_t tick_1(void) 
 {
 	setCh(3,240);
-	setCh(6,255);
 	return 1;
 }
 
 static __attribute__((unused)) uint8_t tick_3(void) 
 {
 	setCh(3,200);
-	setCh(6,255);
 	return 1;
 }
 
 static uint8_t tick_5(void) 
 {
 	setCh(3,150);
-	setCh(6,255);
 	return 1;
 }
 static __attribute__((unused)) uint8_t tick_6(void) 
 {
 	setCh(3,100);
-	setCh(6,255);
 	return 1;
 }
 static __attribute__((unused)) uint8_t tick_7(void)
 {
-	setCh(3,0);
-	setCh(6,0);
 	return 1;
 }
 
 static void init(void)
 {
+	setCh(6,255);
 }
 
 
 static void deinit(void)
 {
+	setCh(3,0);
+	setCh(6,0);
 }
 
 
