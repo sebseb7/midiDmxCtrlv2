@@ -11,6 +11,7 @@
 
 #define LIBFTDI
 
+
 enum {
 	QUADPHASE = 0,
 	SCAN_2,
