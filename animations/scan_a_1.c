@@ -37,7 +37,8 @@ static void deinit(void)
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
 	registerAnimation(init,tick,deinit, SCAN_2,TYPE_NORMAL,20, 2,"rand");
-	queueInitialization(SCAN_2,1,1,0,"scan250 path");
+	queueInitialization(SCAN_2,1,1,0,"scan250_path");
+	queuePageSet(SCAN_2,0,1);
 }
 
 

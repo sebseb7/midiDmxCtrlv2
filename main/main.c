@@ -26,6 +26,9 @@
 
 static uint8_t ch[512];
 static uint8_t in[512];
+static uint8_t out[512];
+static uint8_t manual[512];
+static uint8_t override[512];
 static uint8_t poti[8];
 
 static int running = 1;
@@ -41,6 +44,9 @@ void intHandler(int dummy)
 static int cueuecount = 0;
 static uint32_t update_ui = 1;
 
+static int osc_manual_ch_offset_fine = 0;
+static int osc_manual_ch_offset = 0;
+
 static const uint8_t lpmap[64] = {
 	0 ,1 ,2 ,3 ,4 ,5 ,6 ,7 ,
 	16,17,18,19,20,21,22,23,
@@ -53,12 +59,48 @@ static const uint8_t lpmap[64] = {
 
 };
 
+static uint8_t page_matrix[8*32] = {
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,
+};
 
 struct animation {
 	init_fun init_fp;
 	tick_fun tick_fp;
 	deinit_fun deinit_fp;
+	uint16_t initialized;
 	uint16_t active;
+	uint16_t active_remote;
 	uint32_t duration;
 	uint32_t timing;
 	char * name;
@@ -74,6 +116,7 @@ struct cueue {
 	uint8_t length;
 	uint8_t visible;
 	uint8_t active;
+	uint8_t active_remote;
 	uint8_t random;
 	uint8_t paused;
 	uint8_t in_test;
@@ -123,6 +166,7 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 			cueues[i].tick=0;
 			cueues[i].last_frame=0;
 			cueues[i].active=1;
+			cueues[i].active_remote=0;
 			cueues[i].paused=0;
 			cueues[i].random=0;
 			cueues[i].in_test=0;
@@ -157,6 +201,8 @@ int addToCueue(const uint16_t cueue,const uint8_t cueue_type,const init_fun init
 		cueues[cidx].list[cueues[cidx].length].duration = d;
 		cueues[cidx].list[cueues[cidx].length].timing = t;
 		cueues[cidx].list[cueues[cidx].length].active = 1;
+		cueues[cidx].list[cueues[cidx].length].initialized = 0;
+		cueues[cidx].list[cueues[cidx].length].active_remote = 0;
 		cueues[cidx].list[cueues[cidx].length].name = name;
 		cueues[cidx].length++;
 		cueues[cidx].active_elements++;
@@ -187,29 +233,50 @@ void queueInitialization(uint8_t cueue_type,int active,int visible,int paused, c
 	cueues[cidx].paused=paused;
 	cueues[cidx].name=name;
 }
-void queueAniActive(uint8_t cueue_type,int item,int active)
+void queueRemoteActive(uint8_t cueue_type,int active, int entry)
 {
 	int cidx = cueueidx[cueue_type]-1;
+	
 
-	if(cueues[cidx].length > item)
+	if(active == 1)
 	{
-		if((cueues[cidx].list[item].active == 0)&&(active==1))
+		cueues[cidx].active_remote=1;
+		if(cueues[cidx].active==0)
 		{
-			cueues[cidx].list[item].active=1;
-			cueues[cidx].active_elements++;
-			update_ui=1;
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
 		}
-		if((cueues[cidx].list[item].active == 1)&&(active==0))
+		for(int x =0;x<cueues[cidx].length;x++)
 		{
-			if(cueues[cidx].active_elements>0)
+			if(x == entry)
 			{
-				cueues[cidx].list[item].active=0;
-				cueues[cidx].active_elements--;
-				update_ui=1;
+				cueues[cidx].list[x].active_remote=1;
+			}
+			else
+			{
+				cueues[cidx].list[x].active_remote=0;
 			}
 		}
 	}
+	else
+	{
+		cueues[cidx].active_remote=0;
+		if(cueues[cidx].active==0)
+		{
+			cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+		}
+		for(int x =0;x<cueues[cidx].length;x++)
+		{
+			cueues[cidx].list[x].active_remote=0;
+		}
+	}
 }
+void queuePageSet(uint8_t cueue_type,int page,int active)
+{
+	int cidx = cueueidx[cueue_type]-1;
+
+	page_matrix[page+cidx*8] = active;
+}
+
 
 void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun deinit,const uint16_t cueue,const uint8_t cueue_type,const uint16_t t, const float count,char * name)
 {
@@ -228,10 +295,11 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	osc_connect("192.168.0.112");
+	//osc_connect("169.254.112.29");
 
-//	osc_send_f("/1/push1",1.0f);
-//	osc_send_s("/1/label3","test");
 	osc_start_server();
+	uint16_t osc_current_page = 0;
+	uint16_t osc_current_tab = 1;
 
 #ifdef LAUNCHPAD
 	launchpad_init();
@@ -308,12 +376,14 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
-		cueues[cidx].list[cueues[cidx].active_item].init_fp();
+		if(cueues[cidx].active == 1)
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
 	}
 
 	uint32_t tick_count_ui = 0;
 
 	unsigned long long last_frame_ui=0;
+	unsigned long long last_frame_fader_ui=0;
 
 	struct timeval tv;
 
@@ -355,112 +425,174 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	while(poll_osc_event(&oscev))
 	{
 		printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
-		if(oscev.type == 1)
+		if(oscev.type == 4)
 		{
-			if(oscev.a == 1)
+			update_ui=1;
+			osc_current_page = oscev.a-1;
+		}
+		else if(oscev.type == 6)
+		{
+			if(manual[oscev.a+osc_manual_ch_offset]==1)
 			{
-				if(oscev.b-1 < cueues[0].length)
+				manual[oscev.a+osc_manual_ch_offset]=0;
+			}
+			else
+			{
+				manual[oscev.a+osc_manual_ch_offset]=1;
+			}
+		}
+		else if(oscev.type == 7)
+		{
+			override[oscev.a+osc_manual_ch_offset] = 255.0f * oscev.value;
+		}
+		else if(oscev.type == 8)
+		{
+			if((oscev.a == 1)&&(osc_manual_ch_offset < 239))
+			{
+				osc_manual_ch_offset_fine++;
+			}
+			else if((oscev.a == 0)&&(osc_manual_ch_offset > 0))
+			{
+				osc_manual_ch_offset_fine--;
+			}
+			osc_manual_ch_offset = osc_manual_ch_offset_fine>>3;
+		}
+		else if(oscev.type == 9)
+		{
+			if((oscev.a == 1)&&(osc_manual_ch_offset < 238))
+			{
+				osc_manual_ch_offset_fine+=16;
+			}
+			else if((oscev.a == 0)&&(osc_manual_ch_offset > 1))
+			{
+				osc_manual_ch_offset_fine-=16;
+			}
+			osc_manual_ch_offset = osc_manual_ch_offset_fine>>3;
+		}
+		else if(oscev.type == 5)
+		{
+			osc_current_tab=oscev.a;
+		}
+		else
+		{
+			int line = oscev.a-1;
+
+			int qidx = -1;
+
+			for(int i = 0; i < 32;i++)
+			{
+				if(line == 0)
 				{
-					update_ui=1;
-
-					if(cueues[0].paused==1)
+					qidx = i;
+				}
+				if(page_matrix[osc_current_page+i*8] == 1)
+				{
+					line--;
+				}
+			}
+			
+			if((qidx != -1)&&(qidx < cueuecount))
+			{
+				if(oscev.type == 1)
+				{
+					if(oscev.b-1 < cueues[qidx].length)
 					{
+						update_ui=1;
 
-
-						int new_idx =  oscev.b-1;
-						
-						// why this loop (relict from linked-list times?)
-						int error = 0;
-						while(new_idx != cueues[0].active_item)
+						if(cueues[qidx].paused==1)
 						{
-							error++;
-							if(error > 20)
+
+
+							int new_idx =  oscev.b-1;
+
+							// why this loop (relict from linked-list times?)
+							int error = 0;
+							while(new_idx != cueues[qidx].active_item)
 							{
-								printf("error1a\n");
-								exit(0);
-							}
-							update_ui=1;
+								error++;
+								if(error > 20)
+								{
+									printf("error1a\n");
+									exit(0);
+								}
+								update_ui=1;
 
-							cueues[0].list[cueues[0].active_item].deinit_fp();
+								cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
 
-							cueues[0].active_item++;
-							if(cueues[0].length == cueues[0].active_item)
-								cueues[0].active_item=0;
+								cueues[qidx].active_item++;
+								if(cueues[qidx].length == cueues[qidx].active_item)
+									cueues[qidx].active_item=0;
 
-							cueues[0].tick=0;
-							cueues[0].list[cueues[0].active_item].init_fp();
-						}	
-					}
-					else
-					{
-						if(cueues[0].list[oscev.b-1].active==0)
-						{
-							cueues[0].list[oscev.b-1].active=1;
-							cueues[0].active_elements++;
+								cueues[qidx].tick=0;
+								cueues[qidx].list[cueues[qidx].active_item].init_fp();
+							}	
 						}
 						else
 						{
-							if(cueues[0].active_elements > 1)
+							if(cueues[qidx].list[oscev.b-1].active==0)
 							{
-								cueues[0].list[oscev.b-1].active=0;
-								cueues[0].active_elements--;
+								cueues[qidx].list[oscev.b-1].active=1;
+								cueues[qidx].active_elements++;
+							}
+							else
+							{
+								if(cueues[qidx].active_elements > 1)
+								{
+									cueues[qidx].list[oscev.b-1].active=0;
+									cueues[qidx].active_elements--;
+								}
 							}
 						}
 					}
 				}
-			}
-		}
-		else if(oscev.type == 2)
-		{
-			if(oscev.a == 1)
-			{
-				update_ui=1;
-				if(cueues[0].active==1)
+				else if(oscev.type == 2)
 				{
-					cueues[0].active=0;
-				}
-				else
-				{
-					cueues[0].active=1;
-				}
-			}
-		}
-		else if(oscev.type == 3)
-		{
-			if(oscev.a == 1)
-			{
-				update_ui=1;
-				if(oscev.b == 1)
-				{
-					if(cueues[0].paused==1)
+					update_ui=1;
+					if(cueues[qidx].active==1)
 					{
-						cueues[0].paused=0;
+						cueues[qidx].active=0;
+						cueues[qidx].list[cueues[qidx].active_item].deinit_fp();
 					}
 					else
 					{
-						cueues[0].paused=1;
+						cueues[qidx].active=1;
+						cueues[qidx].list[cueues[qidx].active_item].init_fp();
 					}
 				}
-				else if(oscev.b ==2)
+				else if(oscev.type == 3)
 				{
-					if(cueues[0].random==1)
+					update_ui=1;
+					if(oscev.b == 1)
 					{
-						cueues[0].random=0;
+						if(cueues[qidx].paused==1)
+						{
+							cueues[qidx].paused=0;
+						}
+						else
+						{
+							cueues[qidx].paused=1;
+						}
 					}
-					else
+					else if(oscev.b ==2)
 					{
-						cueues[0].random=1;
+						if(cueues[qidx].random==1)
+						{
+							cueues[qidx].random=0;
+						}
+						else
+						{
+							cueues[qidx].random=1;
+						}
 					}
-				}
-				else if(oscev.b ==3)
-				{
-				}
-				else if(oscev.b ==4)
-				{
-				}
+					else if(oscev.b ==3)
+					{
+					}
+					else if(oscev.b ==4)
+					{
+					}
 
+				}
 			}
-
 		}
 	}
 
@@ -730,72 +862,113 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	{
 		update_ui=0;
 
+		osc_update_page(osc_current_page);
 
-		uint16_t osc_display_offset = 0;
-		for(uint16_t i = 0;i < 1;i++)
+
+		int i = 0;
+		while((i<32)&&(page_matrix[osc_current_page+i*8]==0)) i++;
+
+
+		for(uint16_t j = 0;j < 6;j++)
 		{
-			uint16_t j = i+osc_display_offset;
 
-			printf("update queue %i\n",j);
+			if((i < cueuecount)&&(page_matrix[osc_current_page+i*8]==1))
+			{
 
-			osc_update_queue_label(i,cueues[i].name);
-			if(cueues[i].active == 1)
-			{
-				osc_update_queue_active(i,1);
-			}
-			else
-			{
-				osc_update_queue_active(i,0);
-			}
-			if(cueues[i].paused == 0)
-			{
-				osc_update_queue_ctrl(i,1,1);
-			}
-			else
-			{
-				osc_update_queue_ctrl(i,1,0);
-			}
 
-			for(int x =0;x<16;x++)
-			{
-				if(x < cueues[i].length)
+				osc_update_queue_label(j,cueues[i].name);
+				if(cueues[i].active == 1)
 				{
-					osc_update_queue_entry_label(i,x,cueues[i].list[x].name);
-					osc_update_queue_entry_led(i,x,1,1);
-					osc_update_queue_entry_led(i,x,2,0);
-					if(cueues[i].active_item == x)
-					{
-						osc_update_queue_entry_led(i,x,3,1);
-					}
-					else
-					{
-						osc_update_queue_entry_led(i,x,3,0);
-					}
-					if(cueues[i].list[x].active==1)
-					{
-						osc_update_queue_entry_button(i,x,1);
-					}
-					else
-					{
-						osc_update_queue_entry_button(i,x,0);
-					}
+					osc_update_queue_active(j,1);
 				}
 				else
 				{
-					osc_update_queue_entry_label(i,x,"");
-					osc_update_queue_entry_led(i,x,1,0);
-					osc_update_queue_entry_led(i,x,2,0);
-					osc_update_queue_entry_led(i,x,3,0);
-					osc_update_queue_entry_button(i,x,0);
+					osc_update_queue_active(j,0);
+				}
+				if(cueues[i].paused == 0)
+				{
+					osc_update_queue_ctrl(j,1,1);
+				}
+				else
+				{
+					osc_update_queue_ctrl(j,1,0);
+				}
+				if(cueues[i].active_remote == 1)
+				{
+					osc_update_queue_ctrl(j,4,1);
+				}
+				else
+				{
+					osc_update_queue_ctrl(j,4,0);
 				}
 
-			}
+				for(int x =0;x<16;x++)
+				{
+					if(x < cueues[i].length)
+					{
+						osc_update_queue_entry_label(j,x,cueues[i].list[x].name);
+						osc_update_queue_entry_led(j,x,1,1);
+						osc_update_queue_entry_led(j,x,2,0);
+						if(cueues[i].active_item == x)
+						{
+							osc_update_queue_entry_led(j,x,3,1);
+						}
+						else
+						{
+							osc_update_queue_entry_led(j,x,3,0);
+						}
+						if(cueues[i].list[x].active==1)
+						{
+							osc_update_queue_entry_button(j,x,1);
+						}
+						else
+						{
+							osc_update_queue_entry_button(j,x,0);
+						}
+						if(cueues[i].list[x].active_remote==1)
+						{
+							osc_update_queue_entry_led(j,x,2,1);
+						}
+						else
+						{
+							osc_update_queue_entry_led(j,x,2,0);
+						}
+					}
+					else
+					{
+						osc_update_queue_entry_label(j,x,"");
+						osc_update_queue_entry_led(j,x,1,0);
+						osc_update_queue_entry_led(j,x,2,0);
+						osc_update_queue_entry_led(j,x,3,0);
+						osc_update_queue_entry_button(j,x,0);
+					}
 
+				}
+			}
+			else 
+			{
+				osc_update_queue_label(j,"");
+				osc_update_queue_active(j,0);
+				osc_update_queue_ctrl(j,1,0);
+
+				for(int x =0;x<16;x++)
+				{
+					osc_update_queue_entry_label(j,x,"");
+					osc_update_queue_entry_led(j,x,1,0);
+					osc_update_queue_entry_led(j,x,2,0);
+					osc_update_queue_entry_led(j,x,3,0);
+					osc_update_queue_entry_button(j,x,0);
+				}
+			}
+			do
+			{
+				i++;
+			}
+			while((i<32)&&(page_matrix[osc_current_page+i*8]==0));
 
 
 		}
 		osc_send_flush();
-		printf("\n");
 
 
 
@@ -972,7 +1145,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		{
 			cueues[cidx].off();
 		}
-		else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&(cueues[cidx].active == 1))
+		else if(((uint32_t)time_diff > cueues[cidx].list[cueues[cidx].active_item].timing)&&((cueues[cidx].active == 1)||(cueues[cidx].active_remote == 1)))
 		{
 			//printf("fps %i : %f\n",cidx,1.0f/time_diff*1000000.0f);
 
@@ -986,6 +1159,54 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 
 	}
+	
+	
+	for(int i = 0;i<512;i++)
+	{
+		if(manual[i] == 0)
+		{
+			out[i]=ch[i];
+		}
+		else
+		{
+			out[i]=override[i];
+		}
+	}
+
+	{
+		unsigned long long current_time;
+		int32_t time_diff;
+		gettimeofday(&tv,NULL);
+		current_time = tv.tv_usec;
+		time_diff = current_time - last_frame_fader_ui;
+
+		if(time_diff < 0 )
+		{
+			time_diff+=1000000;
+		}
+
+		if((uint32_t)time_diff > 200000) // 5Hz
+		{
+			time_diff -= 200000;
+			gettimeofday(&tv,NULL);
+			last_frame_fader_ui = tv.tv_usec - time_diff;
+
+
+			if(osc_current_tab == 2)
+			{
+				for(int i=0;i<16;i++)
+				{
+					osc_update_fader(i,i+osc_manual_ch_offset,out[1+i+osc_manual_ch_offset]);	
+					osc_update_manual_state(i,manual[1+i+osc_manual_ch_offset]);	
+				}
+				osc_update_xy(out[4],out[5]);	
+				osc_send_flush();
+			}
+
+		}
+	}
+
+
 
 	{
 		unsigned long long current_time;
@@ -1079,24 +1300,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	}
 	usleep(10);
 
-
-	for(int i = 1;i<9;i++)
-	{
-		//			ch[i]=poti[i-1]*2;
-	}
-
-	//			ch[29]=poti[0]*2;
-	//		ch[30]=poti[1]*2;
-	//		ch[1]=poti[0]*2;
-	//		ch[2]=poti[1]*2;
-	//		ch[3]=poti[2]*2;
-	//		ch[4]=poti[3]*2;
-	//		ch[5]=poti[4]*2;
-	//		ch[6]=poti[5]*2;
-
-	//		printf("%i %i\n",ch[1],ch[2]);
-
-	ret = ftdi_write_data(ftdi, ch, 65);
+	ret = ftdi_write_data(ftdi, out, 65);
 	if (ret < 0)
 	{
 		fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));
@@ -1111,7 +1315,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	for(int cidx=0;cidx < cueuecount;cidx++)
 	{
 
-		if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+		if((cueues[cidx].tick >= cueues[cidx].list[cueues[cidx].active_item].duration)&&(cueues[cidx].active == 1)&&(cueues[cidx].active_remote == 0)&&(cueues[cidx].paused == 0)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
 		{
 			update_ui = 1;
 
@@ -1132,6 +1336,32 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 					cueues[cidx].active_item=0;
 			}
 			while(cueues[cidx].list[cueues[cidx].active_item].active==0);
+
+			cueues[cidx].tick=0;
+
+			cueues[cidx].list[cueues[cidx].active_item].init_fp();
+		}
+		else if((cueues[cidx].list[cueues[cidx].active_item].active_remote!=1)&&(cueues[cidx].active_remote == 1)&&(cueues[cidx].in_test == 0)&&(cueues[cidx].in_off == 0))
+		{
+			update_ui = 1;
+
+			cueues[cidx].list[cueues[cidx].active_item].deinit_fp();
+
+
+			int error = 0;
+			do
+			{
+				error++;
+				if(error > 20)
+				{
+					printf("error2b\n");
+					exit(0);
+				}
+				cueues[cidx].active_item++;
+				if(cueues[cidx].length == cueues[cidx].active_item)
+					cueues[cidx].active_item=0;
+			}
+			while(cueues[cidx].list[cueues[cidx].active_item].active_remote==0);
 
 			cueues[cidx].tick=0;
 

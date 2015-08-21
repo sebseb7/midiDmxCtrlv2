@@ -17,6 +17,7 @@ enum {
 	SCAN_2_COL,
 	SCAN_2_GOBO,
 	SCAN_2_STROBE,
+	SCAN_2_MULTI,
 	SCAN_COL,
 	SCAN_GOBO,
 	SCAN_GOBO_R,
@@ -46,7 +47,9 @@ typedef uint8_t (*tick_fun)(void);
 
 void registerAnimation(init_fun init,tick_fun tick,deinit_fun deinit, uint16_t cueue, uint8_t cueue_type, uint16_t t, float duration,char * name);
 void queueInitialization(uint8_t cueue_type,int active,int visible,int paused,char * name);
-void queueAniActive(uint8_t cueue_type,int item,int active);
+void queueRemoteActive(uint8_t cueue_type,int active,int entry);
+void queuePageSet(uint8_t cueue_type,int page, int active);
+
 
 void setLedX(uint8_t x, uint8_t r,uint8_t g,uint8_t b);
 void setCh(uint8_t chan, uint8_t value);
