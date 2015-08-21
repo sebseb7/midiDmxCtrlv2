@@ -1,6 +1,7 @@
 #ifndef _OSC_H
 #define _OSC_H
 
+#include <stdint.h>
 
 struct osc_event {
 	uint16_t type;
