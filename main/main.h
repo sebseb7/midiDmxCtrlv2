@@ -10,6 +10,7 @@
 
 
 #define LIBFTDI
+#define OSC_OUT
 
 enum {
 	QUADPHASE = 0,
@@ -58,6 +59,8 @@ uint8_t getFader(uint8_t chan);
 void invLedX(uint8_t x);
 void Delay(uint16_t t);
 void getLedX(uint8_t x, uint8_t* red, uint8_t* green, uint8_t* blue);
+
+float get_custom(int ch);
 
 
 #endif

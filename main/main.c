@@ -24,6 +24,16 @@
 #include <SDL/SDL.h>
 #endif
 
+static float custom_master[8] = {1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f};
+
+float get_custom(int ch)
+{
+	if(ch < 8)
+		return custom_master[ch];
+	
+	return 1.0f;
+}
+
 static uint8_t ch[512];
 static uint8_t in[512];
 static uint8_t out[512];
@@ -294,7 +304,7 @@ void registerAnimation(const init_fun init,const tick_fun tick, const deinit_fun
 int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unused__))) {
 
 
-	osc_connect("192.168.0.112");
+	osc_connect("10.0.1.2");
 	//osc_connect("169.254.112.29");
 
 	osc_start_server();
@@ -444,6 +454,10 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 		else if(oscev.type == 7)
 		{
 			override[oscev.a+osc_manual_ch_offset] = 255.0f * oscev.value;
+		}
+		else if(oscev.type == 10)
+		{
+			custom_master[oscev.a] = oscev.value;
 		}
 		else if(oscev.type == 8)
 		{
@@ -1188,9 +1202,9 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			time_diff+=1000000;
 		}
 
-		if((uint32_t)time_diff > 200000) // 5Hz
+		if((uint32_t)time_diff > 50000) // 20Hz
 		{
-			time_diff -= 200000;
+			time_diff -= 50000;
 			gettimeofday(&tv,NULL);
 			last_frame_fader_ui = tv.tv_usec - time_diff;
 
@@ -1231,29 +1245,47 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 			last_frame_ui = tv.tv_usec - time_diff;
 		}
 #ifdef SDL_OUTPUT			
-		SDL_Rect rect = { 0, 0, 50, 50 };
+		SDL_Rect rect10 = { 50, 0, 300, 50 };
+		SDL_FillRect(
+				screen, 
+				&rect10, 
+				SDL_MapRGB(screen->format,100,100,100)
+				);
+		SDL_Rect rect8 = { 55, 5, 40, 40 };
+		SDL_FillRect(
+				screen, 
+				&rect8, 
+				SDL_MapRGB(screen->format,out[54],out[55],out[56])
+				);
+		SDL_Rect rect = { 105, 5, 40, 40 };
 		SDL_FillRect(
 				screen, 
 				&rect, 
-				SDL_MapRGB(screen->format,ch[16],ch[17],ch[18])
+				SDL_MapRGB(screen->format,out[29],out[30],out[31])
 				);
-		SDL_Rect rect2 = { 0, 50, 50, 50 };
+		SDL_Rect rect2 = { 155, 5, 40, 40 };
 		SDL_FillRect(
 				screen, 
 				&rect2, 
-				SDL_MapRGB(screen->format,ch[22],ch[23],ch[24])
+				SDL_MapRGB(screen->format,out[35],out[36],out[37])
 				);
-		SDL_Rect rect3 = { 50, 0, 50, 50 };
+		SDL_Rect rect3 = { 205, 5, 40, 40 };
 		SDL_FillRect(
 				screen, 
 				&rect3, 
-				SDL_MapRGB(screen->format,ch[28],ch[29],ch[30])
+				SDL_MapRGB(screen->format,out[41],out[42],out[43])
 				);
-		SDL_Rect rect4 = { 50, 50, 50, 50 };
+		SDL_Rect rect4 = { 255, 5, 40, 40 };
 		SDL_FillRect(
 				screen, 
 				&rect4, 
-				SDL_MapRGB(screen->format,ch[34],ch[35],ch[36])
+				SDL_MapRGB(screen->format,out[47],out[48],out[49])
+				);
+		SDL_Rect rect9 = { 305, 5, 40, 40 };
+		SDL_FillRect(
+				screen, 
+				&rect9, 
+				SDL_MapRGB(screen->format,out[59],out[60],out[61])
 				);
 
 		/*SDL_Rect rect5 = { 100, 100, 300, 300 };
@@ -1270,7 +1302,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 				);
 		last_scan_x = ch[4];
 		last_scan_y = ch[5];
-		SDL_Rect rect7 = { 100+ch[4], 100+ch[5], 10, 10 };
+		SDL_Rect rect7 = { 100+out[4], 100+out[5], 10, 10 };
 		SDL_FillRect(
 				screen, 
 				&rect7, 

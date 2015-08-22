@@ -4,38 +4,50 @@
 #include <stdlib.h>
 
 #include "osc.h"
+#include "main.h"
 
 #include "lo/lo.h"
 
+static int fader_init[16] = {
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
 void osc_page_flip(void);
 
-static lo_address t;
-static lo_server s;
-static lo_bundle current_bundle;
-static uint16_t bundle_size;
+__attribute__((unused)) static lo_address t;
+__attribute__((unused)) static lo_server s;
+__attribute__((unused)) static lo_bundle current_bundle;
+__attribute__((unused)) static uint16_t bundle_size;
 #define EV_SIZE 200
 
 static struct osc_event eventsbuf[EV_SIZE];
 static struct osc_event *evhead, *evtail;
 
-void osc_connect(const char * 	host)
+void osc_connect(__attribute__((unused)) const char * 	host)
 {
+#ifdef OSC_OUT
 	s = lo_server_new(NULL,NULL);
 	t = lo_address_new(host, "9000");
 	current_bundle = lo_bundle_new(LO_TT_IMMEDIATE);
 	bundle_size=0;
+#endif
 
 }
 void osc_send_flush(void)
 {
-	lo_send_bundle_from(t,s,current_bundle);
-	lo_bundle_free(current_bundle);
-	current_bundle = lo_bundle_new(LO_TT_IMMEDIATE);
-	bundle_size=0;
+#ifdef OSC_OUT
+	if(bundle_size>0)
+	{
+		lo_send_bundle_from(t,s,current_bundle);
+		lo_bundle_free(current_bundle);
+		current_bundle = lo_bundle_new(LO_TT_IMMEDIATE);
+		bundle_size=0;
+	}
+#endif
 
 };
-void osc_send_f(const char * 	path,float num)
+void osc_send_f(__attribute__((unused)) const char * 	path,__attribute__((unused)) float num)
 {
+#ifdef OSC_OUT
 	lo_message mess = lo_message_new();
 
 	lo_message_add_float(mess,num);
@@ -46,9 +58,11 @@ void osc_send_f(const char * 	path,float num)
 	if(bundle_size > 200)
 		osc_send_flush();
 
+#endif
 }
-void osc_send_ff(const char * 	path,float num,float num2)
+void osc_send_ff(__attribute__((unused)) const char * 	path,__attribute__((unused)) float num,__attribute__((unused)) float num2)
 {
+#ifdef OSC_OUT
 	lo_message mess = lo_message_new();
 
 	lo_message_add_float(mess,num);
@@ -59,10 +73,12 @@ void osc_send_ff(const char * 	path,float num,float num2)
 	bundle_size++;
 	if(bundle_size > 200)
 		osc_send_flush();
+#endif
 
 }
-void osc_send_s(const char * 	path,const char * value)
+void osc_send_s(__attribute__((unused)) const char * 	path,__attribute__((unused)) const char * value)
 {
+#ifdef OSC_OUT
 	lo_message mess = lo_message_new();
 
 	lo_message_add_string(mess,value);
@@ -73,6 +89,7 @@ void osc_send_s(const char * 	path,const char * value)
 	if(bundle_size > 200)
 		osc_send_flush();
 
+#endif
 
 }
 
@@ -176,6 +193,7 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 				token = strsep (&running, delimiters);
 				osc_a = atoi(token);
 				osc_value = argv[0]->f;
+				fader_init[osc_a-1]=-1;
 				osc_type = 7;
 			}
 			else if(strcmp("encoder1",token)==0)
@@ -205,6 +223,28 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 		{
 			osc_type=5;
 			osc_a=3;
+		}
+
+	}
+
+	else if(strcmp("4",token)==0)
+	{
+		if(running != NULL)
+		{
+			token = strsep (&running, delimiters);
+			if(strcmp("multifader",token)==0)
+			{
+				token = strsep (&running, delimiters);
+				osc_a = atoi(token)-1;
+				osc_value = argv[0]->f * 2;
+				osc_type = 10;
+			}
+
+		}
+		else
+		{
+			osc_type=5;
+			osc_a=4;
 		}
 
 	}
@@ -260,9 +300,11 @@ void osc_start_server(void)
 {
 	evhead = evtail = eventsbuf;
 
+#ifdef OSC_OUT
 	lo_server_thread st = lo_server_thread_new("8000", error);
 	lo_server_thread_add_method(st, NULL, NULL, generic_handler, NULL);
 	lo_server_thread_start(st);
+#endif
 }
 
 
@@ -404,21 +446,38 @@ void osc_update_page(uint16_t idx)
 
 
 // this needs buffering!
+static int fader_num_init[16] = {
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 
 void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value)
 {
-	char path[200];
-	sprintf(path, "/2/nr_%i",slot+1);
-	char label[200];
-	sprintf(label, "%i",ch+1);
-	osc_send_s(path,label);
 	
-	sprintf(path, "/2/val_%i",slot+1);
-	sprintf(label, "%i",value);
-	osc_send_s(path,label);
+	if(fader_init[slot] != value)
+	{
 
-	sprintf(path, "/2/fader/%i",slot+1);
-	osc_send_f(path,value/255.0f);
+		fader_init[slot]=value;
+	
+		char path[200];
+		char label[200];
+	
+		sprintf(path, "/2/val_%i",slot+1);
+		sprintf(label, "%i",value);
+		osc_send_s(path,label);
+
+		sprintf(path, "/2/fader/%i",slot+1);
+		osc_send_f(path,value/255.0f);
+	}
+	
+	if(fader_num_init[slot] != ch)
+	{
+		fader_num_init[slot]=ch;
+		char path[200];
+		sprintf(path, "/2/nr_%i",slot+1);
+		char label[200];
+		sprintf(label, "%i",ch+1);
+		osc_send_s(path,label);
+	}
+	
 
 
 }
@@ -426,13 +485,17 @@ void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value)
 // this needs buffering!
 void osc_update_xy(uint16_t x,uint16_t y)
 {
-	osc_send_ff("/2/xy1",x/255.0f,y/255.0f);
+	//osc_send_ff("/2/xy1",x/255.0f,y/255.0f);
 }
 
 
+static int manual_state_init[16] = {
+	-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 
 void osc_update_manual_state(uint16_t slot,uint16_t state)
 {
+	if(manual_state_init[slot] == state) return;
+	manual_state_init[slot]=state;
 	char path[200];
 	sprintf(path, "/2/override/1/%i",slot+1);
 	osc_send_f(path,state);
