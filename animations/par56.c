@@ -105,10 +105,10 @@ static void deinit(void)
 static void constructor(void) CONSTRUCTOR_ATTRIBUTES
 void constructor(void) {
 	registerAnimation(init,tick_6,deinit, PAR56,TYPE_NORMAL,35, 20,"fd_out");
-	registerAnimation(init,tick_5,deinit, PAR56,TYPE_NORMAL,25, 5,"Sin");
-	registerAnimation(init,tick_4,deinit, PAR56,TYPE_NORMAL,35, 20,"randFla");
 	registerAnimation(init,tick_1,deinit, PAR56,TYPE_NORMAL,25, 3,"fd_in2");
-	registerAnimation(init,tick_3,deinit, PAR56,TYPE_NORMAL,25, 10,"lauf");
+	registerAnimation(init,tick_4,deinit, PAR56,TYPE_NORMAL,15, 20,"randFla");
+	registerAnimation(init,tick_3,deinit, PAR56,TYPE_NORMAL,130, 5,"strobe");
+	registerAnimation(init,tick_5,deinit, PAR56,TYPE_NORMAL,20, 20,"Sin");
 	registerAnimation(init,tick_0,deinit, PAR56,TYPE_NORMAL,25, 3,"fd_in");
 	queueInitialization(PAR56,1,1,0,"PAR56");
 	queuePageSet(PAR56,0,1);

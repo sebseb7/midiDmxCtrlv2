@@ -37,8 +37,9 @@ static uint8_t tick_6(void)
 	
 	for(int i = 0;i<(6*3);i++)
 	{
-		if(colmap[i]>5) colmap[i]-=5;
-		if(colmap[i]<6) colmap[i]=0;
+		if(colmap[i]>130) colmap[i]-=10;
+		else if(colmap[i]>15) colmap[i]-=6;
+		else if(colmap[i]<16) colmap[i]=0;
 	}
 
 

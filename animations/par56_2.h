@@ -7,11 +7,19 @@ static int c;
 static uint8_t tick_3(void) 
 {
 
-	
+	if((c%20)==0)
+	{
+		for(int i = 0;i<6;i++)
+			for(int j=0;j<3;j++)
+				setpar(i,j,255);
+	}
+	else
+	{
+		for(int i = 0;i<6;i++)
+			for(int j=0;j<3;j++)
+				setpar(i,j,0);
+	}
 
-	setpar(c%((int)(16*get_custom(2))),0,255);
-	
-	setpar((c+((int)(16*get_custom(2)))-2)%((int)(16*get_custom(2))),0,0);
 	
 
 

@@ -11,6 +11,13 @@ int curr_c;
 int curr_l2;
 int curr_c2;
 
+
+int currb_l;
+int currb_c;
+
+int currb_l2;
+int currb_c2;
+
 static uint8_t tick_4(void) 
 {
 	
@@ -23,20 +30,31 @@ static uint8_t tick_4(void)
 		curr_c = rand()%3;
 
 		setpar(curr_l,curr_c,255);
+		
+		currb_l = rand()%6;
+		currb_c = rand()%3;
+
+		setpar(currb_l,currb_c,255);
 	}
 	if(a==1)
 	{
 		setpar(curr_l,curr_c,0);
+		setpar(currb_l,currb_c,0);
 		
 		
 		curr_l2 = rand()%6;
 		curr_c2 = rand()%3;
 
 		setpar(curr_l2,curr_c2,255);
+		currb_l2 = rand()%6;
+		currb_c2 = rand()%3;
+
+		setpar(currb_l2,currb_c2,255);
 	}
 	if(a==2)
 	{
 		setpar(curr_l2,curr_c2,0);
+		setpar(currb_l2,currb_c2,0);
 	}
 
 
