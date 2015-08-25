@@ -1335,7 +1335,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 	}
 	usleep(10);
 
-	ret = ftdi_write_data(ftdi, out, 65);
+	ret = ftdi_write_data(ftdi, out, 75);
 	if (ret < 0)
 	{
 		fprintf(stderr,"write failed , error %d (%s)\n",ret, ftdi_get_error_string(ftdi));

@@ -483,7 +483,7 @@ void osc_update_fader(uint16_t slot,uint16_t ch,uint16_t value)
 }
 
 // this needs buffering!
-void osc_update_xy(uint16_t x,uint16_t y)
+void osc_update_xy(__attribute__((unused)) uint16_t x,__attribute__((unused)) uint16_t y)
 {
 	//osc_send_ff("/2/xy1",x/255.0f,y/255.0f);
 }

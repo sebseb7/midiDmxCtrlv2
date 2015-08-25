@@ -24,9 +24,11 @@ enum {
 	SCAN_GOBO_R,
 	SCAN_STR,
 	SCAN_MOVE,
+	SCAN,
 	PAR36_UV,
 	PAR56,
 	PAR36,
+	STROBE,
 	CHASE,
 
 
