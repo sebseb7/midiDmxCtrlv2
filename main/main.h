@@ -5,11 +5,7 @@
 
 #define CONSTRUCTOR_ATTRIBUTES	__attribute__((constructor));
 
-#define KORG_CTRL
-#define LAUNCHPAD
-
-
-#define LIBFTDI
+//#define LIBFTDI
 #define OSC_OUT
 
 enum {
