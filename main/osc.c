@@ -109,7 +109,18 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 	char *running;
 	char *copy;
 	char *token;
-
+	
+	
+/*	int i;
+	printf("path: <%s>\n", path);
+	for (i = 0; i < argc; i++) {
+		printf("arg %d '%c' ", i, types[i]);
+		lo_arg_pp((lo_type)types[i], argv[i]);
+		printf("\n");
+	}
+	printf("\n");
+	fflush(stdout);
+*/
 	running = strdup(path);
 	copy=running;
 	token = strsep (&running, delimiters);
@@ -123,7 +134,7 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 
 	if(strcmp("1",token)==0)
 	{
-		printf("%s\n",running);
+		//printf("%s\n",running);
 		if(running != NULL)
 		{
 			token = strsep (&running, delimiters);
@@ -252,15 +263,6 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 
 
 
-	int i;
-	printf("path: <%s>\n", path);
-	for (i = 0; i < argc; i++) {
-		printf("arg %d '%c' ", i, types[i]);
-		lo_arg_pp((lo_type)types[i], argv[i]);
-		printf("\n");
-	}
-	printf("\n");
-	fflush(stdout);
 
 
 	free(copy);
