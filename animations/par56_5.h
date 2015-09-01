@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "sini.h"
+#include "led_gamma.h"
 
 static int f;
 
@@ -37,16 +38,16 @@ static uint8_t tick_6(void)
 	
 	for(int i = 0;i<(6*3);i++)
 	{
-		if(colmap[i]>130) colmap[i]-=10;
-		else if(colmap[i]>15) colmap[i]-=6;
+		if(colmap[i]>130) colmap[i]-=4;
+		else if(colmap[i]>15) colmap[i]-=4;
 		else if(colmap[i]<16) colmap[i]=0;
 	}
 
 
 	for(int i = 0;i<6;i++)
 		for(int j=0;j<3;j++)
-			if((colmap[i*3+j]>130)||(f%2==0))
-				setpar(i,j,colmap[i*3+j]);
+			if((colmap[i*3+j]>180)||(f%2==0))
+				setpar(i,j,led_gamma(colmap[i*3+j]));
 			else
 				setpar(i,j,0);
 
