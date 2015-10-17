@@ -406,7 +406,7 @@ int main(int argc __attribute__((__unused__)), char *argv[] __attribute__((__unu
 
 	while(poll_osc_event(&oscev))
 	{
-		printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
+		//printf("EVENT %i %i %i %f\n",oscev.type,oscev.a,oscev.b,oscev.value);
 		if(oscev.type == 4)
 		{
 			update_ui=1;
