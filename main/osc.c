@@ -16,7 +16,7 @@ void osc_page_flip(void);
 __attribute__((unused)) static lo_address t;
 __attribute__((unused)) static lo_server s;
 __attribute__((unused)) static lo_bundle current_bundle;
-__attribute__((unused)) static uint16_t bundle_size;
+__attribute__((unused)) static uint32_t bundle_size;
 #define EV_SIZE 200
 
 static struct osc_event eventsbuf[EV_SIZE];
@@ -53,7 +53,11 @@ void osc_send_f(__attribute__((unused)) const char * 	path,__attribute__((unused
 	lo_message_add_float(mess,num);
 
 	char * newpath =  strdup(path);
-	lo_bundle_add_message(current_bundle,newpath,mess);
+	if(lo_bundle_add_message(current_bundle,newpath,mess) == -1)
+	{
+		free(newpath);
+		lo_message_free(mess);
+	};
 	bundle_size++;
 	if(bundle_size > 200)
 		osc_send_flush();
@@ -69,7 +73,11 @@ void osc_send_ff(__attribute__((unused)) const char * 	path,__attribute__((unuse
 	lo_message_add_float(mess,num2);
 
 	char * newpath =  strdup(path);
-	lo_bundle_add_message(current_bundle,newpath,mess);
+	if(lo_bundle_add_message(current_bundle,newpath,mess) == -1)
+	{
+		free(newpath);
+		lo_message_free(mess);
+	};
 	bundle_size++;
 	if(bundle_size > 200)
 		osc_send_flush();
@@ -84,7 +92,11 @@ void osc_send_s(__attribute__((unused)) const char * 	path,__attribute__((unused
 	lo_message_add_string(mess,value);
 	
 	char * newpath =  strdup(path);
-	lo_bundle_add_message(current_bundle,newpath,mess);
+	if(lo_bundle_add_message(current_bundle,newpath,mess) == -1)
+	{
+		free(newpath);
+		lo_message_free(mess);
+	};
 	bundle_size++;
 	if(bundle_size > 200)
 		osc_send_flush();
@@ -112,7 +124,7 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 
 	running = strdup(path);
 	copy=running;
-	token = strsep (&running, delimiters);
+	strsep (&running, delimiters);
 	token = strsep (&running, delimiters);
 
 
@@ -163,7 +175,7 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 			}
 			else if(strcmp("pageflip",token)==0)
 			{
-				token = strsep (&running, delimiters);
+				strsep (&running, delimiters);
 				token = strsep (&running, delimiters);
 				osc_a = atoi(token);
 				osc_type = 4;
@@ -183,7 +195,7 @@ int generic_handler(const char *path, __attribute__((unused)) const char *types,
 			token = strsep (&running, delimiters);
 			if(strcmp("override",token)==0)
 			{
-				token = strsep (&running, delimiters);
+				strsep (&running, delimiters);
 				token = strsep (&running, delimiters);
 				osc_a = atoi(token);
 				osc_type = 6;
